@@ -55,55 +55,74 @@ export default class Page {
         this.setFBOParticles()
     }
 
-    makeTexture(g){
+    makeTextures(g, image){
 
         let vertAmount = g.attributes.position.count;
         let texWidth = Math.ceil(Math.sqrt(vertAmount));
         let texHeight = Math.ceil(vertAmount / texWidth);
 
-        let data = new Float32Array(texWidth * texHeight * 4);
+        let posData = new Float32Array(texWidth * texHeight * 4);
+        let colorData = new Float32Array(texWidth * texHeight * 4);
 
-        function shuffleArrayByThree(array) {
-            const groupLength = 3;
-
-            let numGroups = Math.floor(array.length / groupLength);
-
-            for (let i = numGroups - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-
-                for (let k = 0; k < groupLength; k++) {
-                    let temp = array[i * groupLength + k];
-                    array[i * groupLength + k] = array[j * groupLength + k];
-                    array[j * groupLength + k] = temp;
-                }
-            }
-
-            return array;
+        // Create shuffle permutation
+        let indices = [];
+        for (let i = 0; i < vertAmount; i++) indices.push(i);
+        for (let i = vertAmount - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            let tmp = indices[i]; indices[i] = indices[j]; indices[j] = tmp;
         }
 
+        // Prepare image sampling if diffuse texture is available
+        let imgData = null;
+        let imgW = 0, imgH = 0;
+        if (image) {
+            const canvas = document.createElement('canvas');
+            canvas.width = image.width;
+            canvas.height = image.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(image, 0, 0);
+            imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            imgW = canvas.width;
+            imgH = canvas.height;
+        }
 
-        shuffleArrayByThree(g.attributes.position.array);
+        const uvs = g.attributes.uv;
 
         for(let i = 0; i < vertAmount; i++){
-            //let f = Math.floor(Math.random() * (randomTemp.length / 3) );
+            const si = indices[i];
 
-            const x = g.attributes.position.array[i * 3 + 0];
-            const y = g.attributes.position.array[i * 3 + 1];
-            const z = g.attributes.position.array[i * 3 + 2];
-            const w = 0
+            posData[i * 4 + 0] = g.attributes.position.array[si * 3 + 0];
+            posData[i * 4 + 1] = g.attributes.position.array[si * 3 + 1];
+            posData[i * 4 + 2] = g.attributes.position.array[si * 3 + 2];
+            posData[i * 4 + 3] = 0;
 
-            //randomTemp.splice(f * 3, 3);
-
-            data[i * 4 + 0] = x;
-            data[i * 4 + 1] = y;
-            data[i * 4 + 2] = z;
-            data[i * 4 + 3] = w;
+            if (imgData && uvs) {
+                let u = uvs.array[si * 2 + 0];
+                let v = uvs.array[si * 2 + 1];
+                u = ((u % 1) + 1) % 1;
+                v = ((v % 1) + 1) % 1;
+                const px = Math.min(Math.max(Math.floor(u * imgW), 0), imgW - 1);
+                const py = Math.min(Math.max(Math.floor((1 - v) * imgH), 0), imgH - 1);
+                const idx = (py * imgW + px) * 4;
+                colorData[i * 4 + 0] = imgData[idx] / 255;
+                colorData[i * 4 + 1] = imgData[idx + 1] / 255;
+                colorData[i * 4 + 2] = imgData[idx + 2] / 255;
+                colorData[i * 4 + 3] = 1.0;
+            } else {
+                colorData[i * 4 + 0] = 1.0;
+                colorData[i * 4 + 1] = 0.5;
+                colorData[i * 4 + 2] = 0.0;
+                colorData[i * 4 + 3] = 1.0;
+            }
         }
 
-        let dataTexture = new THREE.DataTexture(data, texWidth, texHeight, THREE.RGBAFormat, THREE.FloatType);
-        dataTexture.needsUpdate = true;
+        let positionTexture = new THREE.DataTexture(posData, texWidth, texHeight, THREE.RGBAFormat, THREE.FloatType);
+        positionTexture.needsUpdate = true;
 
-        return dataTexture;
+        let colorTexture = new THREE.DataTexture(colorData, texWidth, texHeight, THREE.RGBAFormat, THREE.FloatType);
+        colorTexture.needsUpdate = true;
+
+        return { positionTexture, colorTexture };
     }
 
     setFBOParticles() {
@@ -155,6 +174,22 @@ export default class Page {
             }
             // Return undefined if no geometry is found
             return undefined;
+        }
+
+        function findDiffuseMap(object) {
+            if (object.material) {
+                const mats = Array.isArray(object.material) ? object.material : [object.material];
+                for (const mat of mats) {
+                    if (mat.map && mat.map.image) return mat.map.image;
+                }
+            }
+            if (object.children) {
+                for (let i = 0; i < object.children.length; i++) {
+                    const img = findDiffuseMap(object.children[i]);
+                    if (img) return img;
+                }
+            }
+            return null;
         }
         
         // Usage example:
@@ -239,16 +274,43 @@ export default class Page {
         this.treeGeometry.translate(0, -1, 0)
 
 
-        var uTextureA = this.makeTexture(this.boyGeometry);
+        // Extract diffuse texture images from each model
+        const musicDiffuse = findDiffuseMap(this.resources.items.musicModel.scene);
+        const radioDiffuse = findDiffuseMap(this.resources.items.radioModel.scene);
+        const guitarDiffuse = findDiffuseMap(this.resources.items.gModel.scene);
+        const dDiffuse = findDiffuseMap(this.resources.items.dModel.scene);
+
+        var texA = this.makeTextures(this.boyGeometry, musicDiffuse);
+        var uTextureA = texA.positionTexture;
+        var uColorA = texA.colorTexture;
 
         var data = getRandomData( width, height, 30 );
         var positions = new THREE.DataTexture( data, width, height, THREE.RGBAFormat, THREE.FloatType );
         positions.needsUpdate = true;
-        // var uTextureA = positions;
-        var uTextureB = this.makeTexture(this.oniGeometry);
-        var uTextureC = this.makeTexture(this.e2Geometry);
+
+        var texB = this.makeTextures(this.oniGeometry, radioDiffuse);
+        var uTextureB = texB.positionTexture;
+        var uColorB = texB.colorTexture;
+
+        var texC = this.makeTextures(this.e2Geometry, guitarDiffuse);
+        var uTextureC = texC.positionTexture;
+        var uColorC = texC.colorTexture;
+
         var uTextureD = positions;
-        var uTextureE = this.makeTexture(this.treeGeometry);
+        // Default warm color for random scattered particles
+        var colorDData = new Float32Array(width * height * 4);
+        for (let i = 0; i < width * height; i++) {
+            colorDData[i * 4 + 0] = 1.0;
+            colorDData[i * 4 + 1] = 0.5;
+            colorDData[i * 4 + 2] = 0.0;
+            colorDData[i * 4 + 3] = 1.0;
+        }
+        var uColorD = new THREE.DataTexture(colorDData, width, height, THREE.RGBAFormat, THREE.FloatType);
+        uColorD.needsUpdate = true;
+
+        var texE = this.makeTextures(this.treeGeometry, dDiffuse);
+        var uTextureE = texE.positionTexture;
+        var uColorE = texE.colorTexture;
 
         //simulation shader used to update the particles' positions
         this.simMaterial = new THREE.ShaderMaterial({
@@ -275,6 +337,11 @@ export default class Page {
         this.renderMaterial = new THREE.ShaderMaterial( {
             uniforms: {
                 uPositions: { value: null },
+                uColorA: { value: uColorA },
+                uColorB: { value: uColorB },
+                uColorC: { value: uColorC },
+                uColorD: { value: uColorD },
+                uColorE: { value: uColorE },
                 uSize: { value: 12 },
                 uTime: { value: 0 },
                 uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
@@ -478,7 +545,7 @@ export default class Page {
         const displacement = -1;
         this.treeMesh.position.y = (displacement - section * 4) + this.objectDistance * this.sectionCount * speed
         this.simMaterial.uniforms.uTreePos.value = this.treeMesh.position
-        this.treeMesh.translateX(Math.PI/2)
+        this.treeMesh.translateX(1.5)
         this.treeMesh.rotateY(-this.time.delta * 0.1)
         this.camera.position.x += (this.cursor.x * 0.5 - this.camera.position.x) * 5 * this.time.delta
         this.camera.position.y += (- this.cursor.y * 0.5 - this.camera.position.y) * 5 * this.time.delta
