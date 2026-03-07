@@ -1,5 +1,6 @@
 import glsl from 'vite-plugin-glsl'
 import topLevelAwait from "vite-plugin-top-level-await";
+import react from '@vitejs/plugin-react'
 
 const isCodeSandbox = 'SANDBOX_URL' in process.env || 'CODESANDBOX_HOST' in process.env
 
@@ -20,6 +21,7 @@ export default {
     },
     plugins:
     [
+        react(),
         glsl(),
         topLevelAwait({
             // The export name of top-level await promise for each chunk module

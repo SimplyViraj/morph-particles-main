@@ -191,13 +191,36 @@ export default class Page {
             }
             return null;
         }
-        
+
+        // Collect and merge ALL mesh geometries from a model scene,
+        // baking world transforms so multi-mesh / scaled models work correctly.
+        function collectMergedGeometry(root) {
+            const geos = [];
+            root.updateMatrixWorld(true);
+            root.traverse((child) => {
+                if (child.isMesh && child.geometry) {
+                    let g = child.geometry.clone();
+                    if (g.index) g = g.toNonIndexed();
+                    g.applyMatrix4(child.matrixWorld);
+                    // Keep only position so all geometries are merge-compatible
+                    for (const attr of Object.keys(g.attributes)) {
+                        if (attr !== 'position') g.deleteAttribute(attr);
+                    }
+                    geos.push(g);
+                }
+            });
+            if (geos.length === 0) return undefined;
+            if (geos.length === 1) return geos[0];
+            return BufferGeometryUtils.mergeGeometries(geos, false);
+        }
+
         // Usage example:
         const music = this.resources.items.musicModel.scene.children[0]; // Assuming this is your model object
         const mgeometry = findGeometry(music);
 
-        const radio =  this.resources.items.radioModel.scene.children[0];
-        const rgeometry = findGeometry(radio);
+        // Computer model has a complex hierarchy (8 primitives + subscenes);
+        // merge all mesh geometries with baked world transforms.
+        const rgeometry = collectMergedGeometry(this.resources.items.radioModel.scene);
 
         const sub =  this.resources.items.subModel.scene.children[0];
         const subgeometry = findGeometry(sub);
@@ -259,7 +282,16 @@ export default class Page {
         //var data = getRandomData( width, height, 256 );
 
         this.oniGeometry = rgeometry;
-        this.oniGeometry.scale(3, 3, 3)
+        this.oniGeometry.center()
+        this.oniGeometry.computeBoundingBox()
+        const oniSize = new THREE.Vector3();
+        this.oniGeometry.boundingBox.getSize(oniSize);
+        const oniMaxDim = Math.max(oniSize.x, oniSize.y, oniSize.z);
+        // Normalize to ~2 units then apply scale(3) → ~6 units, matching other models
+        if (oniMaxDim > 0) {
+            const normScale = 2.0 / oniMaxDim;
+            this.oniGeometry.scale(normScale, normScale, normScale);
+        }
         this.oniGeometry.rotateY(-Math.PI / 2)
 
 
@@ -427,7 +459,9 @@ export default class Page {
         // this.scene.add(points)
 
         this.treeMesh = this.resources.items.treeModel.scene
-        this.treeMesh.children[1].material.visible = false
+        if (this.treeMesh.children[1] && this.treeMesh.children[1].material) {
+            this.treeMesh.children[1].material.visible = false
+        }
         this.treeMesh.scale.set(1.1, 1.1, 1.1)
         this.treeMesh.position.set(0, this.objectDistance, 0)
 
