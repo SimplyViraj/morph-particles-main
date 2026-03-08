@@ -282,9 +282,9 @@ export default class Page {
         const pointsMorphTargetDictionary = morphTargets.morphTargetDictionary;
    
         this.boyGeometry = mgeometry
-        this.boyGeometry.scale(1.5, 1.5, 1.5)
+        this.boyGeometry.scale(1.25, 1.25, 1.25)
         this.boyGeometry.rotateY((-Math.PI/2) * 0.50)
-        this.boyGeometry.translate( 2 , -0.6 , 0)
+        this.boyGeometry.translate( 2 , -0.25 , 0)
 
         this.e2Geometry = this.resources.items.gModel.scene.children[0].geometry;
         this.e2Geometry.scale(5, 5, 5)
@@ -304,8 +304,9 @@ export default class Page {
         //var data = getRandomData( width, height, 256 );
 
         this.oniGeometry = rgeometry;
-        this.oniGeometry.scale(3, 3, 3)
+        this.oniGeometry.scale(1.75, 1.75, 1.75)
         this.oniGeometry.rotateY(-Math.PI / 2)
+        this.oniGeometry.translate(1.75, -0.25, 0)
 
 
         //convertes it to a FloatTexture
