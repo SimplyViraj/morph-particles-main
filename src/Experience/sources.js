@@ -40,7 +40,7 @@ export default [
     {
         name: 'radioModel',
         type: 'gltfModel',
-        path: 'models/computer.glb'
+        path: 'models/radio/radio.gltf'
     },
     {
         name: 'subModel',
