@@ -286,10 +286,11 @@ export default class Page {
         this.boyGeometry.rotateY((-Math.PI/2) * 0.50)
         this.boyGeometry.translate( 2 , -0.25 , 0)
 
-        this.e2Geometry = this.resources.items.gModel.scene.children[0].geometry;
-        this.e2Geometry.scale(5, 5, 5)
+        const gModelRoot = this.resources.items.gModel.scene.children[0];
+        this.e2Geometry = findGeometry(gModelRoot);
+        this.e2Geometry.scale(2, 2, 2)
         this.e2Geometry.rotateY(-Math.PI / 2)
-        this.e2Geometry.translate(0, -1.5, 0)
+        this.e2Geometry.translate( 1.8, -0.25, 0)
         // this.e2Geometry.rotateY(-Math.PI / 6)
         // console.log(this.resources.items.subModel.scene.children[0]);
 
@@ -305,8 +306,9 @@ export default class Page {
 
         this.oniGeometry = rgeometry;
         this.oniGeometry.scale(1.75, 1.75, 1.75)
-        this.oniGeometry.rotateY(-Math.PI / 2)
-        this.oniGeometry.translate(1.75, -0.25, 0)
+        this.oniGeometry.rotateY(-Math.PI/2) 
+        this.oniGeometry.rotateX(-Math.PI / 6)
+        this.oniGeometry.translate(1.75, -0.25, 0.5)
 
 
         //convertes it to a FloatTexture

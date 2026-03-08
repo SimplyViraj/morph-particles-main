@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600&display=swap');
+
 @import url('https://fonts.cdnfonts.com/css/general-sans');
 @import url('https://fonts.googleapis.com/css2?family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&display=swap');
 
@@ -54,6 +56,55 @@
   font-style: italic;
   font-display: swap;
 }
+
+
+
+@layer base {
+  :root {
+    --background: 20 10% 8%;
+    --foreground: 38 30% 85%;
+
+    --card: 20 8% 12%;
+    --card-foreground: 38 30% 85%;
+
+    --popover: 20 8% 12%;
+    --popover-foreground: 38 30% 85%;
+
+    --primary: 38 40% 65%;
+    --primary-foreground: 20 10% 8%;
+
+    --secondary: 20 8% 16%;
+    --secondary-foreground: 38 30% 75%;
+
+    --muted: 20 6% 18%;
+    --muted-foreground: 38 15% 55%;
+
+    --accent: 38 35% 55%;
+    --accent-foreground: 20 10% 8%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 20 8% 20%;
+    --input: 20 8% 20%;
+    --ring: 38 40% 65%;
+
+    --radius: 1rem;
+
+    --font-display: 'Playfair Display', serif;
+    --font-body: 'Inter', sans-serif;
+
+    --sidebar-background: 20 10% 8%;
+    --sidebar-foreground: 38 30% 85%;
+    --sidebar-primary: 38 40% 65%;
+    --sidebar-primary-foreground: 20 10% 8%;
+    --sidebar-accent: 20 8% 16%;
+    --sidebar-accent-foreground: 38 30% 85%;
+    --sidebar-border: 20 8% 20%;
+    --sidebar-ring: 38 40% 65%;
+  }
+}
+
 * {
   margin: 0;
   padding: 0;

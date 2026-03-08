@@ -35,12 +35,12 @@ export default [
     {
         name: 'gModel',
         type: 'gltfModel',
-        path: 'models/g/g.gltf'
+        path: 'models/object_0.glb'
     },
     {
         name: 'radioModel',
         type: 'gltfModel',
-        path: 'models/object_0.glb'
+        path: 'models/book.glb'
     },
     {
         name: 'subModel',

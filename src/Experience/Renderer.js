@@ -79,7 +79,7 @@ export default class Renderer
         this.postProcess.unrealBloomPass.enabled = true
 
         this.postProcess.unrealBloomPass.tintColor = {}
-        this.postProcess.unrealBloomPass.tintColor.value = '#000000'
+        this.postProcess.unrealBloomPass.tintColor.value = '#161412'
         this.postProcess.unrealBloomPass.tintColor.instance = new THREE.Color(this.postProcess.unrealBloomPass.tintColor.value)
 
         this.postProcess.unrealBloomPass.compositeMaterial.uniforms.uTintColor = { value: this.postProcess.unrealBloomPass.tintColor.instance }
