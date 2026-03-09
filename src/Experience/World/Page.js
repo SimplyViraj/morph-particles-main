@@ -317,9 +317,9 @@ export default class Page {
 
 
         this.treeGeometry = dancegeometry
-        this.treeGeometry.scale(0.11, 0.11, 0.11)
-        this.treeGeometry.rotateX(Math.PI / 1.25);   
-        this.treeGeometry.translate(0, -1, 0)
+        this.treeGeometry.scale(2.5,2.5,2.5)
+        this.treeGeometry.rotateY(-Math.PI / 2);  
+        this.treeGeometry.translate(0, 0.75, 0)
 
 
         const meshA = findMesh(this.resources.items.musicModel.scene);
@@ -580,10 +580,10 @@ export default class Page {
         const speed = 2;
         const section = this.sectionCount * 2;
         const displacement = -1;
-        this.treeMesh.position.y = (displacement - section * 4) + this.objectDistance * this.sectionCount * speed
+        this.treeMesh.position.y = (displacement - section * 4) + this.objectDistance * this.sectionCount * speed + Math.sin(this.time.elapsed * 0.5) * 0.15
         this.simMaterial.uniforms.uTreePos.value = this.treeMesh.position
         
-        this.treeMesh.rotateY(-this.time.delta * 0.1)
+        // levitation only, no rotation
         this.camera.position.x += (this.cursor.x * 0.5 - this.camera.position.x) * 5 * this.time.delta
         this.camera.position.y += (- this.cursor.y * 0.5 - this.camera.position.y) * 5 * this.time.delta
     }

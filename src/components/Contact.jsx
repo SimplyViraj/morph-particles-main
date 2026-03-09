@@ -8,7 +8,7 @@ const links = [
 
 export default function Contact() {
   return (
-    <section className="section min-h-dvh relative font-jost text-[#ffeded] flex items-center">
+    <section className="section min-h-dvh relative font-jost text-[#ffeded] flex items-end pb-4">
       <div className="w-full px-8 lg:px-[5%] py-16">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 max-w-7xl mx-auto">
 
@@ -53,7 +53,7 @@ export default function Contact() {
           </div>
 
           {/* Footer */}
-          <div className="lg:col-span-3 rounded-2xl bg-[#1e1915] border border-[#2a2420] p-8 flex items-center justify-between">
+          <div className="lg:col-span-3 rounded-2xl bg-[#1e1915] border border-[#2a2420] p-2 flex items-center justify-between">
             <span className="text-sm text-[#8a8078] italic normal-case">
               Maanya Chadalavada &copy; 2026
             </span>

@@ -50,6 +50,6 @@ export default [
     {
         name: 'dModel',
         type: 'gltfModel',
-        path: 'models/d.glb'
+        path: 'models/phone.glb'
     },
 ]

@@ -59,7 +59,7 @@ void main() {
   vec3 textureB = rotationMatrix3(vec3(0.0, 1.0, 0.0), sin(uTime) * 0.3 + 3.14) * texture2D( uTextureB, vUv ).xyz;
   vec3 textureC = texture2D( uTextureC, vUv ).xyz;
   vec3 textureD = texture2D( uTextureD, vUv ).xyz;
-  vec3 textureE = rotationMatrix3(vec3(0.0, 1.0, 0.0), uTime * 0.1) * texture2D( uTextureE, vUv ).xyz;
+  vec3 textureE = texture2D( uTextureE, vUv ).xyz;
 
 
 
