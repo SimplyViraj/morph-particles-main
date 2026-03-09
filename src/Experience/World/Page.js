@@ -306,9 +306,9 @@ export default class Page {
 
         this.oniGeometry = rgeometry;
         this.oniGeometry.scale(1.75, 1.75, 1.75)
-        this.oniGeometry.rotateY(-Math.PI/2) 
-        this.oniGeometry.rotateX(-Math.PI / 6)
-        this.oniGeometry.translate(1.75, -0.25, 0.5)
+        this.oniGeometry.rotateY(-Math.PI) 
+        this.oniGeometry.rotateX(Math.PI/3)
+        this.oniGeometry.translate(1.75, -0.30, 0.5)
 
 
         //convertes it to a FloatTexture
@@ -318,7 +318,8 @@ export default class Page {
 
         this.treeGeometry = dancegeometry
         this.treeGeometry.scale(2.5,2.5,2.5)
-        this.treeGeometry.rotateY(-Math.PI / 2);  
+        this.treeGeometry.rotateY(Math.PI );  
+        this.treeGeometry.rotateX(-Math.PI / 8)
         this.treeGeometry.translate(0, 0.75, 0)
 
 

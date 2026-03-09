@@ -2,28 +2,32 @@ import { ArrowUpRight } from "lucide-react";
 
 const projects = [
   {
-    title: "E-Commerce Platform",
-    description: "Full-stack web application with payment integration, user auth, and real-time inventory management.",
-    tags: ["React", "Node.js", "PostgreSQL"],
+    title: "Scheduler",
+    description: "Full-stack scheduling application with a client-server architecture for managing and organizing tasks efficiently.",
+    tags: ["JavaScript", "CSS", "Node.js"],
     light: false,
+    link: "https://github.com/Maanya188/scheduler",
   },
   {
-    title: "Data Visualization Dashboard",
-    description: "Interactive analytics dashboard processing large datasets with dynamic charts and filtering.",
-    tags: ["Python", "D3.js", "Pandas"],
+    title: "SmartHatch",
+    description: "A modern hatchery management system with a full-stack JavaScript frontend and server, deployed on Vercel for real-time operational tracking.",
+    tags: ["JavaScript", "Vercel", "Full Stack"],
     light: true,
+    link: "https://github.com/Maanya188/SmarHatch",
   },
   {
-    title: "Task Management App",
-    description: "Collaborative project management tool with real-time updates, drag-and-drop, and team features.",
-    tags: ["TypeScript", "React", "Firebase"],
+    title: "Hatchery Management System",
+    description: "Database-driven hatchery management platform with user authentication, production tracking, and financial assistance modules.",
+    tags: ["PHP", "HTML", "SQL"],
     light: false,
+    link: "https://github.com/Maanya188/Hatchery-Management-System",
   },
   {
-    title: "Portfolio Website",
-    description: "This very site — designed and built from scratch with attention to detail and smooth interactions.",
-    tags: ["React", "Tailwind", "Three.js"],
+    title: "Phishing URL Classification",
+    description: "Machine learning model trained on 91k URLs to classify phishing sites using logistic regression and KNN classifiers.",
+    tags: ["Python", "Jupyter", "ML"],
     light: true,
+    link: "https://github.com/Maanya188/phising-site-url-classification",
   },
 ];
 
@@ -46,7 +50,10 @@ export default function Projects() {
 
           {/* Project cards */}
           {projects.map((project, i) => (
-            <div
+            <a
+              href={project.link}
+              target="_blank"
+              rel="noopener noreferrer"
               key={project.title}
               className={`rounded-2xl p-8 flex flex-col justify-between min-h-[280px] group cursor-pointer transition-all duration-300 hover:scale-[1.02] ${
                 i === 1 ? "md:col-span-2" : i === 2 ? "md:col-span-2" : ""
@@ -95,7 +102,7 @@ export default function Projects() {
                   {project.description}
                 </p>
               </div>
-            </div>
+            </a>
           ))}
         </div>
       </div>

@@ -1,14 +1,21 @@
 import { Mail, Github, Linkedin, ArrowUpRight } from "lucide-react";
 
 const links = [
-  { icon: Mail, label: "Email", href: "mailto:hello@maanya.dev", value: "hello@maanya.dev" },
-  { icon: Github, label: "GitHub", href: "https://github.com", value: "github.com/maanya" },
-  { icon: Linkedin, label: "LinkedIn", href: "https://linkedin.com", value: "linkedin.com/in/maanya" },
+  { icon: Mail, label: "Email", href: "mailto:maanyachadalavada@gmail.com", value: "maanyachadalavada@gmail.com" },
+  { icon: Github, label: "GitHub", href: "https://github.com/Maanya188", value: "github.com/Maanya188" },
+  { icon: Linkedin, label: "LinkedIn", href: "https://www.linkedin.com/in/chadalavadamaanya/", value: "linkedin.com/chadalavadamaanya" },
 ];
 
 export default function Contact() {
+  const scrollTo = (id) => (e) => {
+    e.preventDefault();
+    const scroller = document.getElementById('fake-scroll');
+    const target = document.getElementById(id);
+    if (scroller && target) scroller.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+  };
+
   return (
-    <section className="section min-h-dvh relative font-jost text-[#ffeded] flex items-end pb-4">
+    <section id="contact" className="section min-h-dvh relative font-jost text-[#ffeded] flex items-end pb-4">
       <div className="w-full px-8 lg:px-[5%] py-16">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 max-w-7xl mx-auto">
 
@@ -57,7 +64,7 @@ export default function Contact() {
             <span className="text-sm text-[#8a8078] italic normal-case">
               Maanya Chadalavada &copy; 2026
             </span>
-            <a href="#hero" className="text-[10px] text-[#8a8078] hover:text-[#c9b896] transition-colors uppercase tracking-[0.3em]">
+            <a href="#hero" onClick={scrollTo('hero')} className="text-[10px] text-[#8a8078] hover:text-[#c9b896] transition-colors uppercase tracking-[0.3em]">
               Back to top &uarr;
             </a>
           </div>

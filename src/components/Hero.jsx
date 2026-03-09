@@ -1,6 +1,13 @@
 export default function Hero() {
+  const scrollTo = (id) => (e) => {
+    e.preventDefault();
+    const scroller = document.getElementById('fake-scroll');
+    const target = document.getElementById(id);
+    if (scroller && target) scroller.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+  };
+
   return (
-    <section className="section flex items-center h-dvh relative font-jost text-[#ffeded]">
+    <section id="hero" className="section flex items-center h-dvh relative font-jost text-[#ffeded]">
       {/* Left side — name header over the 3D model */}
       <div className="hidden lg:flex lg:w-1/2 h-full flex-col items-center justify-start pt-12">
         <div className="w-[80%] rounded-full border border-[#3a3530] bg-[#1e1915]/80 backdrop-blur-sm py-3 px-8 text-center">
@@ -47,13 +54,13 @@ export default function Hero() {
           <div className="rounded-2xl bg-[#b8a990] p-5 flex flex-col justify-between">
             <div className="flex justify-between items-start">
               <span className="text-[11px] normal-case text-[#3a3530] italic">Have some<br/>questions?</span>
-              <a href="#contact" className="text-[#3a3530]">
+              <a href="#contact" onClick={scrollTo('contact')} className="text-[#3a3530]">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7v10" />
                 </svg>
               </a>
             </div>
-            <a href="#contact" className="normal-case">
+            <a href="#contact" onClick={scrollTo('contact')} className="normal-case">
               <p className="text-2xl font-semibold text-[#3a3530] leading-tight">
                 Contact <span className="italic font-normal">me</span>
               </p>

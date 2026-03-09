@@ -1,6 +1,7 @@
 import { useRef, useMemo, useEffect } from 'react';
 import Globe from "react-globe.gl";
 import { MeshPhongMaterial } from 'three';
+import { Code, Database, Globe as GlobeIcon, Lightbulb } from 'lucide-react';
 
 const About = () => {
   const globeRef = useRef(null);
@@ -65,22 +66,17 @@ const About = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {/* Col 1 — 2×2 Skills grid */}
           <div className="grid grid-cols-2 grid-rows-2 gap-3">
-            <div className="rounded-2xl bg-[#1e1915] p-4 flex flex-col items-center justify-center text-center border border-[#2a2420] hover:border-[#c9b896]/30 transition-colors">
-              <span className="text-2xl mb-2">⚛️</span>
-              <span className="text-xs normal-case text-[#c9b896]">React</span>
-            </div>
-            <div className="rounded-2xl bg-[#1e1915] p-4 flex flex-col items-center justify-center text-center border border-[#2a2420] hover:border-[#c9b896]/30 transition-colors">
-              <span className="text-2xl mb-2">🐍</span>
-              <span className="text-xs normal-case text-[#c9b896]">Python</span>
-            </div>
-            <div className="rounded-2xl bg-[#1e1915] p-4 flex flex-col items-center justify-center text-center border border-[#2a2420] hover:border-[#c9b896]/30 transition-colors">
-              <span className="text-2xl mb-2">☕</span>
-              <span className="text-xs normal-case text-[#c9b896]">Java</span>
-            </div>
-            <div className="rounded-2xl bg-[#1e1915] p-4 flex flex-col items-center justify-center text-center border border-[#2a2420] hover:border-[#c9b896]/30 transition-colors">
-              <span className="text-2xl mb-2">🧊</span>
-              <span className="text-xs normal-case text-[#c9b896]">Three.js</span>
-            </div>
+            {[
+              { icon: Code, label: "Software Engineering" },
+              { icon: Database, label: "Data Analysis" },
+              { icon: GlobeIcon, label: "Full Stack Development" },
+              { icon: Lightbulb, label: "Problem Solving" },
+            ].map(({ icon: Icon, label }) => (
+              <div key={label} className="rounded-2xl bg-[#1e1915] p-4 flex flex-col items-center justify-center text-center border border-[#2a2420] hover:border-[#c9b896]/30 transition-colors">
+                <Icon className="w-6 h-6 mb-2 text-[#c9b896]" />
+                <span className="text-xs normal-case text-[#c9b896]">{label}</span>
+              </div>
+            ))}
           </div>
 
           {/* Col 2 — Work preference */}
