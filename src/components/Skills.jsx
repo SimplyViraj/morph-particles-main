@@ -9,7 +9,7 @@ export default function Skills() {
           <h2 className="text-[clamp(1.8rem,4vw,3.5rem)] leading-[1.15] font-light tracking-tight normal-case text-[#c9b896]">
             What are you <span className="italic font-bold">still</span> waiting for?
           </h2>
-          <Rabbit className="w-14 h-14 text-[#c9b896] shrink-0" />
+       
         </div>
 
         {/* Subtext — right aligned */}

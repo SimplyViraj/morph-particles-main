@@ -17,26 +17,119 @@ export default function Hero() {
   return (
     <section
       id="hero"
-      className="section relative flex h-dvh items-center font-jost text-[#ffeded]"
+      className="
+        section relative flex
+        h-dvh w-full
+        flex-col
+        items-center
+        font-jost text-[#ffeded]
+        lg:flex-row
+      "
     >
-      {/* Left — Name */}
-      <div className="hidden h-full w-1/2 flex-col items-center justify-start pt-12 lg:flex">
-        <div className="w-[80%] rounded-full border border-[#3a3530] bg-[#1e1915]/80 px-8 py-3 text-center backdrop-blur-sm">
-          <span className="text-lg font-light italic leading-[1.25] tracking-normal text-[#c9b896]">
+      {/* Name Header */}
+      <div
+        className="
+          flex
+          w-full
+          items-center
+          justify-center
+          pt-6
+          sm:pt-8
+          lg:h-full
+          lg:w-1/2
+          lg:items-start
+          lg:justify-center
+          lg:pt-12
+        "
+      >
+        <div
+          className="
+            w-[85%]
+            rounded-full
+            border border-[#3a3530]
+            bg-[#1e1915]/80
+            px-5 py-2
+            text-center
+            backdrop-blur-sm
+            sm:w-[75%]
+            sm:px-6
+            sm:py-2.5
+            lg:w-[80%]
+            lg:px-8
+            lg:py-3
+          "
+        >
+          <span
+            className="
+              text-sm
+              font-light
+              italic
+              leading-[1.25]
+              tracking-normal
+              text-[#c9b896]
+              sm:text-base
+              lg:text-lg
+            "
+          >
             Viraj Tammana
           </span>
         </div>
       </div>
 
-      {/* Right — Bento Grid */}
-      <div className="flex h-full w-full items-center justify-center px-6 animate-fadeIn lg:w-1/2 lg:pl-4 lg:pr-[5%]">
-        <div className="grid aspect-square w-full max-w-[620px] grid-cols-[1.2fr_1fr] grid-rows-2 gap-3">
-
+      {/* Bento Grid */}
+      <div
+        className="
+          flex
+          h-full
+          w-full
+          flex-1
+          items-center
+          justify-center
+          px-3
+          pt-[60dvh]
+    lg:pt-0
+          animate-fadeIn
+          sm:px-5
+          lg:w-1/2
+          lg:flex-none
+          lg:pl-4
+          lg:pr-[5%]
+        "
+      >
+        <div
+          className="
+            grid
+            aspect-square
+            w-full
+            max-w-[620px]
+            grid-cols-[1.2fr_1fr]
+            grid-rows-2
+            gap-2
+            sm:gap-3
+          "
+        >
           {/* Headline */}
-          <div className="flex flex-col justify-between rounded-2xl bg-[#1e1915] p-6">
+          <div
+            className="
+              flex flex-col justify-between
+              rounded-xl
+              bg-[#1e1915]
+              p-3
+              sm:rounded-2xl
+              sm:p-4
+              md:p-5
+              lg:p-6
+            "
+          >
             <div className="flex justify-end">
               <svg
-                className="h-10 w-10 text-[#c9b896]"
+                className="
+                  h-6 w-6
+                  sm:h-7 sm:w-7
+                  md:h-8 md:w-8
+                  lg:h-10 lg:w-10
+                  text-[#c9b896]
+                "
                 viewBox="0 0 24 24"
                 fill="currentColor"
                 aria-hidden="true"
@@ -45,7 +138,16 @@ export default function Hero() {
               </svg>
             </div>
 
-            <h1 className="text-[clamp(1.1rem,2vw,1.5rem)] font-light leading-[1.25] tracking-tight text-[#c9b896]">
+            <h1
+              className="
+                text-[clamp(0.85rem,3.5vw,1.5rem)]
+                font-light
+                leading-[1.2]
+                tracking-tight
+                text-[#c9b896]
+                sm:leading-[1.25]
+              "
+            >
               Engineering{" "}
               <span className="font-bold italic">systems</span>
               <br />
@@ -56,24 +158,58 @@ export default function Hero() {
           </div>
 
           {/* Portrait */}
-          <div className="overflow-hidden rounded-2xl">
+          <div className="overflow-hidden rounded-xl sm:rounded-2xl">
             <img
               src="/images/Viraj.jpeg"
               alt="Viraj Tammana"
-              className="h-full w-full scale-150 object-cover"
+              className="
+                h-full
+                w-full
+                scale-[1.35]
+                object-cover
+                sm:scale-150
+              "
             />
           </div>
 
           {/* Bio */}
-          <div className="flex flex-col justify-between rounded-2xl bg-[#1e1915] p-5">
+          <div
+            className="
+              flex flex-col justify-between
+              rounded-xl
+              bg-[#1e1915]
+              p-3
+              sm:rounded-2xl
+              sm:p-4
+              md:p-5
+              lg:p-5
+            "
+          >
             <span
-              className="text-xl text-[#c9b896]"
+              className="
+                text-base
+                text-[#c9b896]
+                sm:text-lg
+                md:text-xl
+              "
               aria-hidden="true"
             >
               &#x2767;
             </span>
 
-            <p className="mt-auto text-[12px] leading-[1.7] text-[#8a8078]">
+            <p
+              className="
+                mt-auto
+                text-[9px]
+                leading-[1.5]
+                text-[#8a8078]
+                sm:text-[10px]
+                sm:leading-[1.6]
+                md:text-[11px]
+                lg:text-[12px]
+                lg:leading-[1.7]
+              "
+            >
               Software Engineer focused on backend systems, full-stack
               development, and intelligent applications. I build with
               .NET, TypeScript, cloud infrastructure, and modern AI.
@@ -81,9 +217,29 @@ export default function Hero() {
           </div>
 
           {/* Contact */}
-          <div className="flex flex-col justify-between rounded-2xl bg-[#b8a990] p-5">
+          <div
+            className="
+              flex flex-col justify-between
+              rounded-xl
+              bg-[#b8a990]
+              p-3
+              sm:rounded-2xl
+              sm:p-4
+              md:p-5
+            "
+          >
             <div className="flex items-start justify-between">
-              <span className="text-[11px] italic text-[#3a3530]">
+              <span
+                className="
+                  text-[8px]
+                  italic
+                  leading-[1.3]
+                  text-[#3a3530]
+                  sm:text-[9px]
+                  md:text-[10px]
+                  lg:text-[11px]
+                "
+              >
                 Let's build
                 <br />
                 something.
@@ -97,7 +253,11 @@ export default function Hero() {
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
+                  className="
+                    h-3 w-3
+                    sm:h-3.5 sm:w-3.5
+                    md:h-4 md:w-4
+                  "
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -117,8 +277,18 @@ export default function Hero() {
               onClick={scrollTo("contact")}
               className="text-left"
             >
-              <p className="text-2xl font-semibold leading-tight text-[#3a3530]">
-                Get in <span className="font-normal italic">touch</span>
+              <p
+                className="
+                  text-[1.1rem]
+                  font-semibold
+                  leading-tight
+                  text-[#3a3530]
+                  sm:text-xl
+                  md:text-2xl
+                "
+              >
+                Get in{" "}
+                <span className="font-normal italic">touch</span>
               </p>
             </a>
           </div>
@@ -127,3 +297,4 @@ export default function Hero() {
     </section>
   );
 }
+
