@@ -47,8 +47,8 @@ export default function Contact() {
         min-h-dvh
         items-end
         font-jost
-        pb-[150dvh]
-    lg:pt-0
+        pb-[30dvh]
+    lg:pb-[20dvh]
         text-[#ffeded]
         pb-3
         sm:pb-4
