@@ -1,103 +1,266 @@
+
 import { ArrowUpRight } from "lucide-react";
 
-const projects = [
-  {
-    title: "Scheduler",
-    description: "Full-stack scheduling application with a client-server architecture for managing and organizing tasks efficiently.",
-    tags: ["JavaScript", "CSS", "Node.js"],
-    light: false,
-    link: "https://github.com/Maanya188/scheduler",
-  },
-  {
-    title: "SmartHatch",
-    description: "A modern hatchery management system with a full-stack JavaScript frontend and server, deployed on Vercel for real-time operational tracking.",
-    tags: ["JavaScript", "Vercel", "Full Stack"],
-    light: true,
-    link: "https://github.com/Maanya188/SmarHatch",
-  },
-  {
-    title: "Hatchery Management System",
-    description: "Database-driven hatchery management platform with user authentication, production tracking, and financial assistance modules.",
-    tags: ["PHP", "HTML", "SQL"],
-    light: false,
-    link: "https://github.com/Maanya188/Hatchery-Management-System",
-  },
-  {
-    title: "Phishing URL Classification",
-    description: "Machine learning model trained on 91k URLs to classify phishing sites using logistic regression and KNN classifiers.",
-    tags: ["Python", "Jupyter", "ML"],
-    light: true,
-    link: "https://github.com/Maanya188/phising-site-url-classification",
-  },
-];
-
+const projects = [{ title: "Advanced Data Warehouse Analytics", description: "Data warehouse built with ETL workflows and complex T-SQL queries.", tags: ["SQL Server", "T-SQL", "ETL"], light: false, link: "https://github.com/SimplyViraj/Data-Warehouse-Project", }, { title: "Multimodal Disease Classification", description: "Multimodal deep learning system combining chest X-rays and clinical reports using DenseNet-121, PubMedBERT, and adaptive Mixture-of-Modality Experts for thoracic disease classification.", tags: ["Python", "Transformers", "DenseNet-121"], light: true, link: "https://github.com/SimplyViraj/Multimodal-Medical-Diagnosis-", }, { title: "Buxx", description: "Secure accounting platform supporting Admins, Super Admins, Tax Authorities, and individual users with RBAC, authorization workflows, audit operations, and real-time notifications.", tags: ["MERN", "TypeScript", "MongoDB"], light: false, link: "https://github.com/SimplyViraj/Buxx-Accounting-System", }, { title: "Automated Crop Insurance", description: "Blockchain-based architecture for automated crop insurance settlement using smart contracts and real-time weather data as triggers for claim payouts.", tags: ["Blockchain", "Smart Contracts", "FinTech"], light: true, link: "https://drive.google.com/file/d/1gr_M8GsfbX7jqufwnjG93gJnzCWcK-aV/view?usp=sharing", },];
 export default function Projects() {
   return (
-    <section className="section min-h-dvh relative font-jost text-[#ffeded] flex items-center -mt-[7vh]">
-      {/* Left — empty for 3D model */}
+    <section
+      className="
+        section
+        relative
+        flex
+        min-h-dvh
+        w-full
+        pt-[40dvh]
+    lg:pt-0
+        items-center
+        -mt-[7vh]
+        font-jost
+        text-[#ffeded]
+      "
+    >
+      {/* =====================================================
+          LEFT — EMPTY FOR 3D MODEL
+      ====================================================== */}
       <div className="hidden lg:block lg:w-[40%]" />
 
-      {/* Right — project cards grid */}
-      <div className="w-full lg:w-[60%] px-8 lg:pr-[5%] lg:pl-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {/* Title card — full width */}
-          <div className="md:col-span-3 rounded-2xl bg-[#1e1915] p-4 flex items-end justify-between">
-            <h2 className="text-[clamp(1rem,2.5vw,2rem)] leading-[1.1] font-light tracking-tight normal-case text-[#b8a990]">
-              Selected <span className="italic font-bold">projects</span>
+      {/* =====================================================
+          RIGHT — PROJECT CONTENT
+      ====================================================== */}
+      <div
+        className="
+          mx-auto
+          w-full
+          max-w-[430px]
+          px-3
+          py-8
+
+          sm:max-w-[600px]
+          sm:px-5
+          sm:py-10
+
+          lg:mx-0
+          lg:max-w-none
+          lg:w-[60%]
+          lg:pr-[5%]
+          lg:pl-8
+          lg:py-16
+        "
+      >
+        <div
+          className="
+            grid
+            grid-cols-3
+            gap-2
+
+            sm:gap-3
+          "
+        >
+          {/* =================================================
+              TITLE CARD — FULL WIDTH
+          ================================================== */}
+          <div
+            className="
+              col-span-3
+              flex
+              min-h-[70px]
+              items-end
+              justify-between
+              rounded-xl
+              bg-[#1e1915]
+              p-3
+
+              sm:min-h-[85px]
+              sm:rounded-2xl
+              sm:p-4
+
+              lg:min-h-0
+              lg:p-4
+            "
+          >
+            <h2
+              className="
+                text-[clamp(0.85rem,4vw,1.25rem)]
+                font-light
+                leading-[1.1]
+                tracking-tight
+                normal-case
+                text-[#b8a990]
+
+                sm:text-[clamp(1rem,2.5vw,1.5rem)]
+
+                lg:text-[clamp(1rem,2.5vw,2rem)]
+              "
+            >
+              Selected{" "}
+              <span className="font-bold italic">
+                projects
+              </span>
             </h2>
-            <span className="text-[10px] tracking-[0.3em] uppercase text-[#5a5040] font-light">Work</span>
+
+            <span
+              className="
+                text-[6px]
+                font-light
+                tracking-[0.2em]
+                uppercase
+                text-[#5a5040]
+
+                sm:text-[8px]
+
+                lg:text-[10px]
+                lg:tracking-[0.3em]
+              "
+            >
+              Work
+            </span>
           </div>
 
-          {/* Project cards */}
+          {/* =================================================
+              PROJECT CARDS
+          ================================================== */}
           {projects.map((project, i) => (
             <a
               href={project.link}
               target="_blank"
               rel="noopener noreferrer"
               key={project.title}
-              className={`rounded-2xl p-8 flex flex-col justify-between min-h-[280px] group cursor-pointer transition-all duration-300 hover:scale-[1.02] ${
-                i === 1 ? "md:col-span-2" : i === 2 ? "md:col-span-2" : ""
-              } ${
-                project.light
-                  ? "bg-[#b8a990]"
-                  : "bg-[#1e1915] border border-[#2a2420]"
-              }`}
+              className={`
+                group
+                flex
+                min-h-[170px]
+                cursor-pointer
+                flex-col
+                justify-between
+                rounded-xl
+                p-3
+                transition-all
+                duration-300
+                hover:scale-[1.02]
+
+                sm:min-h-[210px]
+                sm:rounded-2xl
+                sm:p-5
+
+                lg:min-h-[280px]
+                lg:p-8
+
+                ${
+                  i === 1
+                    ? "col-span-2"
+                    : i === 2
+                    ? "col-span-2"
+                    : "col-span-1"
+                }
+
+                ${
+                  project.light
+                    ? "bg-[#b8a990]"
+                    : "border border-[#2a2420] bg-[#1e1915]"
+                }
+              `}
             >
-              <div className="flex items-start justify-between">
-                <div className="flex flex-wrap gap-2">
+              {/* =================================================
+                  TAGS + ARROW
+              ================================================== */}
+              <div className="flex items-start justify-between gap-1">
+                <div className="flex flex-wrap gap-1">
                   {project.tags.map((tag) => (
                     <span
                       key={tag}
-                      className={`px-3 py-1 rounded-full text-[10px] font-light tracking-wide normal-case ${
-                        project.light
-                          ? "bg-[#a89880] text-[#3a3530]"
-                          : "bg-[#2a2420] text-[#c9b896]"
-                      }`}
+                      className={`
+                        rounded-full
+                        px-1.5
+                        py-0.5
+                        text-[6px]
+                        font-light
+                        tracking-wide
+                        normal-case
+
+                        sm:px-2
+                        sm:py-1
+                        sm:text-[8px]
+
+                        lg:px-3
+                        lg:text-[10px]
+
+                        ${
+                          project.light
+                            ? "bg-[#a89880] text-[#3a3530]"
+                            : "bg-[#2a2420] text-[#c9b896]"
+                        }
+                      `}
                     >
                       {tag}
                     </span>
                   ))}
                 </div>
+
                 <ArrowUpRight
-                  className={`w-5 h-5 transition-colors ${
-                    project.light
-                      ? "text-[#5a5040] group-hover:text-[#3a3530]"
-                      : "text-[#8a8078] group-hover:text-[#c9b896]"
-                  }`}
+                  className={`
+                    h-3 w-3
+                    shrink-0
+                    transition-colors
+
+                    sm:h-4 sm:w-4
+
+                    lg:h-5 lg:w-5
+
+                    ${
+                      project.light
+                        ? "text-[#5a5040] group-hover:text-[#3a3530]"
+                        : "text-[#8a8078] group-hover:text-[#c9b896]"
+                    }
+                  `}
                 />
               </div>
+
+              {/* =================================================
+                  PROJECT INFO
+              ================================================== */}
               <div>
                 <h3
-                  className={`text-xl font-light tracking-tight normal-case mb-2 ${
-                    project.light ? "text-[#3a3530]" : "text-[#c9b896]"
-                  }`}
+                  className={`
+                    mb-1
+                    text-[10px]
+                    font-light
+                    leading-[1.2]
+                    tracking-tight
+                    normal-case
+
+                    sm:mb-2
+                    sm:text-sm
+
+                    lg:text-xl
+
+                    ${
+                      project.light
+                        ? "text-[#3a3530]"
+                        : "text-[#c9b896]"
+                    }
+                  `}
                 >
                   {project.title}
                 </h3>
+
                 <p
-                  className={`text-[12px] leading-[1.7] normal-case ${
-                    project.light ? "text-[#5a5040]" : "text-[#8a8078]"
-                  }`}
+                  className={`
+                    text-[7px]
+                    leading-[1.5]
+                    normal-case
+
+                    sm:text-[9px]
+                    sm:leading-[1.6]
+
+                    lg:text-[12px]
+                    lg:leading-[1.7]
+
+                    ${
+                      project.light
+                        ? "text-[#5a5040]"
+                        : "text-[#8a8078]"
+                    }
+                  `}
                 >
                   {project.description}
                 </p>
@@ -109,3 +272,4 @@ export default function Projects() {
     </section>
   );
 }
+
