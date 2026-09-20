@@ -28,38 +28,46 @@ export default class Page {
         this.renderer = this.experience.renderer.instance
         this.resources = this.experience.resources
         this.sizes = this.experience.sizes
-        this.timeline = this.experience.timeline;
-        this.isMobile = this.experience.isMobile
-        this.cursor = this.experience.cursor
+        this.timeline = this.experience.timeline
+        this.isMobile = this.experience.isMobile || window.innerWidth < 768
+        this.cursor = this.experience.cursor || { x: 0, y: 0 }
 
-        this.sectionCount = document.querySelectorAll('.section').length - 1
-        this.range = 1.0 / parseFloat(this.sectionCount)
+        // Mobile float fallback: HalfFloatType is widely supported across mobile GPUs
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        this.floatType = isIOS ? THREE.HalfFloatType : THREE.FloatType;
+
+        const sections = document.querySelectorAll('.section');
+        this.sectionCount = Math.max(sections.length - 1, 1);
+        this.range = 1.0 / parseFloat(this.sectionCount);
         this.objectDistance = 100000;
-        this.scrollY = window.scrollY
-        this.normalizedScrollY = this.scrollY / (document.body.offsetHeight - window.innerHeight);
-        this.currentSection = 0
+        this.scrollY = window.scrollY;
 
+        const maxScrollHeight = Math.max(document.body.offsetHeight - window.innerHeight, 1);
+        this.normalizedScrollY = this.scrollY / maxScrollHeight;
+        this.currentSection = 0;
 
         this.smoothScroll = document.querySelector('.smooth');
-        this.scrollTarget = 0
-        this.normalizedTargetScrollY = 0
+        this.scrollTarget = 0;
+        this.normalizedTargetScrollY = 0;
 
-        document.getElementById('fake-scroll').addEventListener('scroll', (e) => {
-            this.scroll()
-        });
+        const fakeScroll = document.getElementById('fake-scroll');
+        if (fakeScroll) {
+            fakeScroll.addEventListener('scroll', () => this.scroll(), { passive: true });
+            fakeScroll.addEventListener('wheel', (e) => { this.scrollDeltaY = e.deltaY; }, { passive: true });
+            // Mobile touch listener for instant response
+            fakeScroll.addEventListener('touchmove', () => this.scroll(), { passive: true });
+        } else {
+            window.addEventListener('scroll', () => this.scroll(), { passive: true });
+            window.addEventListener('touchmove', () => this.scroll(), { passive: true });
+        }
 
-        document.getElementById('fake-scroll').addEventListener('wheel', (e) => {
-            this.scrollDeltaY = e.deltaY
-        });
-
-        this.setFBOParticles()
+        this.setFBOParticles();
     }
 
     extractVertexColors(geometry, mesh) {
         const vertAmount = geometry.attributes.position.count;
         const colors = new Float32Array(vertAmount * 3);
 
-        // Try vertex colors first
         if (geometry.attributes.color) {
             const colAttr = geometry.attributes.color;
             for (let i = 0; i < vertAmount; i++) {
@@ -70,7 +78,6 @@ export default class Page {
             return colors;
         }
 
-        // Try texture map sampling
         const material = mesh && mesh.material;
         if (material && material.map && material.map.image && geometry.attributes.uv) {
             const image = material.map.image;
@@ -81,14 +88,14 @@ export default class Page {
             ctx.drawImage(image, 0, 0);
             const imageData = ctx.getImageData(0, 0, image.width, image.height);
             const uvs = geometry.attributes.uv;
+
             for (let i = 0; i < vertAmount; i++) {
-                let u = uvs.array[i * 2];
-                let v = uvs.array[i * 2 + 1];
-                u = ((u % 1) + 1) % 1;
-                v = ((v % 1) + 1) % 1;
+                let u = ((uvs.array[i * 2] % 1) + 1) % 1;
+                let v = ((uvs.array[i * 2 + 1] % 1) + 1) % 1;
                 const x = Math.floor(u * (image.width - 1));
                 const y = Math.floor((1 - v) * (image.height - 1));
                 const pixelIdx = (y * image.width + x) * 4;
+
                 colors[i * 3 + 0] = imageData.data[pixelIdx] / 255;
                 colors[i * 3 + 1] = imageData.data[pixelIdx + 1] / 255;
                 colors[i * 3 + 2] = imageData.data[pixelIdx + 2] / 255;
@@ -96,7 +103,6 @@ export default class Page {
             return colors;
         }
 
-        // Use material color
         if (material && material.color) {
             for (let i = 0; i < vertAmount; i++) {
                 colors[i * 3 + 0] = material.color.r;
@@ -106,57 +112,49 @@ export default class Page {
             return colors;
         }
 
-        // Fallback: white
-        for (let i = 0; i < vertAmount; i++) {
-            colors[i * 3 + 0] = 1.0;
-            colors[i * 3 + 1] = 1.0;
-            colors[i * 3 + 2] = 1.0;
-        }
+        colors.fill(1.0);
         return colors;
     }
 
     makeDefaultColorTexture(width, height, color) {
-        let data = new Float32Array(width * height * 4);
+        const data = new Float32Array(width * height * 4);
         for (let i = 0; i < width * height; i++) {
             data[i * 4 + 0] = color.r;
             data[i * 4 + 1] = color.g;
             data[i * 4 + 2] = color.b;
             data[i * 4 + 3] = 1.0;
         }
-        let tex = new THREE.DataTexture(data, width, height, THREE.RGBAFormat, THREE.FloatType);
+        const tex = new THREE.DataTexture(data, width, height, THREE.RGBAFormat, this.floatType);
         tex.needsUpdate = true;
         return tex;
     }
 
-    makeTexture(g, mesh){
+    makeTexture(geometry, mesh, width = 256, height = 256) {
+        const targetParticles = width * height;
+        const vertAmount = geometry.attributes.position.count;
+        const posData = new Float32Array(targetParticles * 4);
+        const colorData = new Float32Array(targetParticles * 4);
 
-        let vertAmount = g.attributes.position.count;
-        let texWidth = Math.ceil(Math.sqrt(vertAmount));
-        let texHeight = Math.ceil(vertAmount / texWidth);
+        const vertColors = this.extractVertexColors(geometry, mesh);
 
-        let posData = new Float32Array(texWidth * texHeight * 4);
-        let colorData = new Float32Array(texWidth * texHeight * 4);
-
-        // Extract per-vertex colors from the mesh's material/texture
-        let vertColors = this.extractVertexColors(g, mesh);
-
-        // Create shuffled index array (Fisher-Yates)
-        let indices = [];
-        for (let i = 0; i < vertAmount; i++) indices.push(i);
-        for (let i = indices.length - 1; i > 0; i--) {
+        const indices = new Array(vertAmount);
+        for (let i = 0; i < vertAmount; i++) indices[i] = i;
+        for (let i = vertAmount - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            let tmp = indices[i];
+            const tmp = indices[i];
             indices[i] = indices[j];
             indices[j] = tmp;
         }
 
-        for(let i = 0; i < vertAmount; i++){
-            const si = indices[i];
+        const posArray = geometry.attributes.position.array;
 
-            posData[i * 4 + 0] = g.attributes.position.array[si * 3 + 0];
-            posData[i * 4 + 1] = g.attributes.position.array[si * 3 + 1];
-            posData[i * 4 + 2] = g.attributes.position.array[si * 3 + 2];
-            posData[i * 4 + 3] = 0;
+        for (let i = 0; i < targetParticles; i++) {
+            const si = indices[i % vertAmount];
+
+            posData[i * 4 + 0] = posArray[si * 3 + 0];
+            posData[i * 4 + 1] = posArray[si * 3 + 1];
+            posData[i * 4 + 2] = posArray[si * 3 + 2];
+            posData[i * 4 + 3] = 1.0;
 
             colorData[i * 4 + 0] = vertColors[si * 3 + 0];
             colorData[i * 4 + 1] = vertColors[si * 3 + 1];
@@ -164,428 +162,333 @@ export default class Page {
             colorData[i * 4 + 3] = 1.0;
         }
 
-        let posTexture = new THREE.DataTexture(posData, texWidth, texHeight, THREE.RGBAFormat, THREE.FloatType);
+        const posTexture = new THREE.DataTexture(posData, width, height, THREE.RGBAFormat, this.floatType);
         posTexture.needsUpdate = true;
 
-        let colorTexture = new THREE.DataTexture(colorData, texWidth, texHeight, THREE.RGBAFormat, THREE.FloatType);
+        const colorTexture = new THREE.DataTexture(colorData, width, height, THREE.RGBAFormat, this.floatType);
         colorTexture.needsUpdate = true;
 
         return { positions: posTexture, colors: colorTexture };
     }
 
     setFBOParticles() {
-        // width and height of FBO
         const width = 256;
         const height = 256;
 
-        function parseMesh(g){
-            var vertices = g.vertices;
-            var total = vertices.length;
-            var size = parseInt( Math.sqrt( total * 4 ) + .5 );
-            var data = new Float32Array( size*size * 4 );
-            for( var i = 0; i < total; i++ ) {
-                data[i * 3] = vertices[i].x;
-                data[i * 3 + 1] = vertices[i].y;
-                data[i * 3 + 2] = vertices[i].z;
+        function getRandomData(w, h, size, isMobile) {
+            const total = w * h;
+            const data = new Float32Array(total * 4);
+            const spreadX = isMobile ? size * 0.45 : size;
+            for (let i = 0; i < total; i++) {
+                data[i * 4 + 0] = (Math.random() - 0.5) * spreadX;
+                data[i * 4 + 1] = (Math.random() - 0.5) * size;
+                data[i * 4 + 2] = (Math.random() - 0.5) * size;
+                data[i * 4 + 3] = 1.0;
             }
             return data;
         }
 
-        //returns an array of random 3D coordinates
-        function getRandomData( width, height, size ){
-            var len = width * height * 4;
-            var data = new Float32Array( len );
-            //while( len-- )data[len] = ( Math.random() -.5 ) * size ;
-            for(let i = 0; i < len; i++){
-                data[i * 3 + 0] = (Math.random() - 0.5) * size
-                data[i * 3 + 1] = (Math.random() - 0.5) * size
-                data[i * 3 + 2] = (Math.random() - 0.5) * size
-            }
-
-            return data;
-        }
         function findGeometry(object) {
-            // Check if the object has geometry
-            if (object.geometry !== undefined) {
-                // Return the geometry if found
-                return object.geometry;
-            } else {
-                // If the object has children, recursively search for geometry
-                if (object.children.length > 0) {
-                    for (let i = 0; i < object.children.length; i++) {
-                        const geometry = findGeometry(object.children[i]);
-                        if (geometry !== undefined) {
-                            return geometry;
-                        }
-                    }
-                }
-            }
-            // Return undefined if no geometry is found
-            return undefined;
+            if (!object) return null;
+            let found = null;
+            object.traverse((child) => {
+                if (!found && child.geometry) found = child.geometry;
+            });
+            return found;
         }
 
         function findMesh(object) {
-            if (object.geometry !== undefined && object.material !== undefined) {
-                return object;
-            }
-            if (object.children && object.children.length > 0) {
-                for (let i = 0; i < object.children.length; i++) {
-                    const mesh = findMesh(object.children[i]);
-                    if (mesh !== undefined) return mesh;
-                }
-            }
-            return undefined;
+            if (!object) return null;
+            let found = null;
+            object.traverse((child) => {
+                if (!found && child.isMesh) found = child;
+            });
+            return found;
         }
+
+        // --- Responsive Transform Factors ---
+        // On mobile, models are scaled down by ~45% and X-offset is centered
+        const mobileScale = this.isMobile ? 0.55 : 1.0;
+        const xOffset = this.isMobile ? 0.0 : 1.8;
+
+        // Model A (Boy)
+        const musicMesh = findMesh(this.resources.items.musicModel?.scene);
+        this.boyGeometry = findGeometry(this.resources.items.musicModel?.scene)?.clone() || new THREE.BufferGeometry();
+        this.boyGeometry.scale(1.25 * mobileScale, 1.25 * mobileScale, 1.25 * mobileScale);
+        this.boyGeometry.rotateY((-Math.PI / 2) * 0.50);
+        this.boyGeometry.translate(this.isMobile ? 0 : 2.0, -0.25, 0);
+
+        // Model C (G Model)
+        const gMesh = findMesh(this.resources.items.gModel?.scene);
+        this.e2Geometry = findGeometry(this.resources.items.gModel?.scene)?.clone() || new THREE.BufferGeometry();
+        this.e2Geometry.scale(2.0 * mobileScale, 2.0 * mobileScale, 2.0 * mobileScale);
+        this.e2Geometry.rotateY(-Math.PI / 2);
+        this.e2Geometry.translate(xOffset, -0.25, 0);
+
+        // Model B (Radio / Oni)
+        const radioMesh = findMesh(this.resources.items.radioModel?.scene);
+        this.oniGeometry = findGeometry(this.resources.items.radioModel?.scene)?.clone() || new THREE.BufferGeometry();
+        this.oniGeometry.scale(1.75 * mobileScale, 1.75 * mobileScale, 1.75 * mobileScale);
+        this.oniGeometry.rotateY(-Math.PI);
+        this.oniGeometry.rotateX(Math.PI / 3);
+        this.oniGeometry.translate(this.isMobile ? 0 : 1.75, -0.30, 0.5);
+
+        // Model E (Tree / Dance)
+        const danceMesh = findMesh(this.resources.items.dModel?.scene);
+        this.treeGeometry = findGeometry(this.resources.items.dModel?.scene)?.clone() || new THREE.BufferGeometry();
+        this.treeGeometry.scale(2.5 * mobileScale, 2.5 * mobileScale, 2.5 * mobileScale);
+        this.treeGeometry.rotateY(Math.PI);
+        this.treeGeometry.rotateX(-Math.PI / 8);
+        this.treeGeometry.translate(0, 0.75, 0);
+
+        // Texture extraction
+        const resultA = this.makeTexture(this.boyGeometry, musicMesh, width, height);
+        const resultB = this.makeTexture(this.oniGeometry, radioMesh, width, height);
+        const resultC = this.makeTexture(this.e2Geometry, gMesh, width, height);
         
-        // Usage example:
-        const music = this.resources.items.musicModel.scene.children[0]; // Assuming this is your model object
-        const mgeometry = findGeometry(music);
+        const randomData = getRandomData(width, height, 30, this.isMobile);
+        const uTextureD = new THREE.DataTexture(randomData, width, height, THREE.RGBAFormat, this.floatType);
+        uTextureD.needsUpdate = true;
+        const uColorD = this.makeDefaultColorTexture(width, height, new THREE.Color(1.0, 1.0, 1.0));
 
-        const radio =  this.resources.items.radioModel.scene.children[0];
-        const rgeometry = findGeometry(radio);
+        const resultE = this.makeTexture(this.treeGeometry, danceMesh, width, height);
 
-        const sub =  this.resources.items.subModel.scene.children[0];
-        const subgeometry = findGeometry(sub);
-
-        const dance =  this.resources.items.dModel.scene.children[0];
-        const dancegeometry = findGeometry(dance);
-
-        function findMorphTargets(object) {
-            let morphTargets = {
-                morphTargetInfluences: [],
-                morphTargetDictionary: {}
-            };
-        
-            // Recursive function to search for morph targets in the object and its children
-            function searchMorphTargets(obj) {
-                if (obj.morphTargetInfluences !== undefined && obj.morphTargetDictionary !== undefined) {
-                    morphTargets.morphTargetInfluences = obj.morphTargetInfluences;
-                    morphTargets.morphTargetDictionary = obj.morphTargetDictionary;
-                    return; // Found morph targets, no need to search further
-                }
-        
-                if (obj.children.length > 0) {
-                    obj.children.forEach(child => {
-                        searchMorphTargets(child); // Recursively search through children
-                    });
-                }
-            }
-        
-            searchMorphTargets(object);
-        
-            return morphTargets;
-        }
-        
-        // Usage example:
-        const morphTargets = findMorphTargets(dance);
-        const pointsMorphTargetInfluences = morphTargets.morphTargetInfluences;
-        const pointsMorphTargetDictionary = morphTargets.morphTargetDictionary;
-   
-        this.boyGeometry = mgeometry
-        this.boyGeometry.scale(1.25, 1.25, 1.25)
-        this.boyGeometry.rotateY((-Math.PI/2) * 0.50)
-        this.boyGeometry.translate( 2 , -0.25 , 0)
-
-        const gModelRoot = this.resources.items.gModel.scene.children[0];
-        this.e2Geometry = findGeometry(gModelRoot);
-        this.e2Geometry.scale(2, 2, 2)
-        this.e2Geometry.rotateY(-Math.PI / 2)
-        this.e2Geometry.translate( 1.8, -0.25, 0)
-        // this.e2Geometry.rotateY(-Math.PI / 6)
-        // console.log(this.resources.items.subModel.scene.children[0]);
-
-
-        // this.horseGeometry = this.resources.items.horseModel.scene.children[0].geometry.clone()
-        // this.horseGeometry.scale(0.01, 0.01, 0.01)
-
-
-
-
-        //populate a Float32Array of random positions
-        //var data = getRandomData( width, height, 256 );
-
-        this.oniGeometry = rgeometry;
-        this.oniGeometry.scale(1.75, 1.75, 1.75)
-        this.oniGeometry.rotateY(-Math.PI) 
-        this.oniGeometry.rotateX(Math.PI/3)
-        this.oniGeometry.translate(1.75, -0.30, 0.5)
-
-
-        //convertes it to a FloatTexture
-        //var positions = new THREE.DataTexture( data, width, height, THREE.RGBAFormat, THREE.FloatType );
-        //positions.needsUpdate = true;
-
-
-        this.treeGeometry = dancegeometry
-        this.treeGeometry.scale(2.5,2.5,2.5)
-        this.treeGeometry.rotateY(Math.PI );  
-        this.treeGeometry.rotateX(-Math.PI / 8)
-        this.treeGeometry.translate(0, 0.75, 0)
-
-
-        const meshA = findMesh(this.resources.items.musicModel.scene);
-        const resultA = this.makeTexture(this.boyGeometry, meshA);
-        var uTextureA = resultA.positions;
-        var uColorA = resultA.colors;
-
-        var data = getRandomData( width, height, 30 );
-        var positions = new THREE.DataTexture( data, width, height, THREE.RGBAFormat, THREE.FloatType );
-        positions.needsUpdate = true;
-
-        const meshB = findMesh(this.resources.items.radioModel.scene);
-        const resultB = this.makeTexture(this.oniGeometry, meshB);
-        var uTextureB = resultB.positions;
-        var uColorB = resultB.colors;
-
-        const meshC = findMesh(this.resources.items.gModel.scene);
-        const resultC = this.makeTexture(this.e2Geometry, meshC);
-        var uTextureC = resultC.positions;
-        var uColorC = resultC.colors;
-
-        var uTextureD = positions;
-        var uColorD = this.makeDefaultColorTexture(width, height, new THREE.Color(1.0, 1.0, 1.0));
-
-        const meshE = findMesh(this.resources.items.dModel.scene);
-        const resultE = this.makeTexture(this.treeGeometry, meshE);
-        var uTextureE = resultE.positions;
-        var uColorE = resultE.colors;
-
-        //simulation shader used to update the particles' positions
+        // Simulation Material
         this.simMaterial = new THREE.ShaderMaterial({
-            uniforms:{
-                uTextureA: { type: "t", value: uTextureA },
-                uTextureB: { type: "t", value: uTextureB },
-                uTextureC: { type: "t", value: uTextureC },
-                uTextureD: { type: "t", value: uTextureD },
-                uTextureE: { type: "t", value: uTextureE },
+            uniforms: {
+                uTextureA: { value: resultA.positions },
+                uTextureB: { value: resultB.positions },
+                uTextureC: { value: resultC.positions },
+                uTextureD: { value: uTextureD },
+                uTextureE: { value: resultE.positions },
                 uTime: { value: 0 },
-                uScroll : { value: this.normalizedScrollY },
-                uTreePos : { value: new THREE.Vector3() },
+                uScroll: { value: this.normalizedScrollY },
+                uTreePos: { value: new THREE.Vector3() },
             },
-            defines:
-            {
-                uTotalModels : parseFloat(this.sectionCount).toFixed(2),
+            defines: {
+                uTotalModels: parseFloat(this.sectionCount).toFixed(2),
             },
             vertexShader: simVertex,
-            fragmentShader:  simFragment
+            fragmentShader: simFragment
         });
 
-        //render shader to display the particles on screen
-        //the 'positions' uniform will be set after the FBO.update() call
-        this.renderMaterial = new THREE.ShaderMaterial( {
+        // Adaptive Point Size based on viewport width
+        const baseSize = this.isMobile ? 7.0 : 12.0;
+
+        // Render Material
+        this.renderMaterial = new THREE.ShaderMaterial({
             uniforms: {
                 uPositions: { value: null },
-                uColorA: { value: uColorA },
-                uColorB: { value: uColorB },
-                uColorC: { value: uColorC },
+                uColorA: { value: resultA.colors },
+                uColorB: { value: resultB.colors },
+                uColorC: { value: resultC.colors },
                 uColorD: { value: uColorD },
-                uColorE: { value: uColorE },
-                uSize: { value: 12 },
+                uColorE: { value: resultE.colors },
+                uSize: { value: baseSize },
                 uTime: { value: 0 },
                 uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
-                uScroll : { value: this.normalizedScrollY },
+                uScroll: { value: this.normalizedScrollY },
             },
-            defines:
-            {
-                uTotalModels : parseFloat(this.sectionCount).toFixed(2),
-                uRange : this.range,
+            defines: {
+                uTotalModels: parseFloat(this.sectionCount).toFixed(2),
+                uRange: this.range,
             },
             vertexShader: particlesVertex,
             fragmentShader: particlesFragment,
             transparent: true,
             depthWrite: false,
             blending: THREE.AdditiveBlending
-        } );
+        });
 
-        // Initialize the FBO
         this.fbo = new FBO(width, height, this.renderer, this.simMaterial, this.renderMaterial);
-
-        // Add the particles to the scene
         this.scene.add(this.fbo.particles);
 
+        // Horse Particles Setup
+        this.resource = this.resources.items.horseModel;
+        if (this.resource?.scene) {
+            this.horseMesh = this.resource.scene;
+            const horseScale = 0.01 * mobileScale;
+            this.horseMesh.scale.set(horseScale, horseScale, horseScale);
 
-        this.resource = this.resources.items.horseModel
-        this.horseMesh = this.resources.items.horseModel.scene
-        this.danceguymesh = this.resources.items.dModel.scene
+            this.horsePointsMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    uPositions: { value: null },
+                    uSize: { value: this.isMobile ? 1.5 : 2.0 },
+                    uTime: { value: 0 },
+                    uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
+                    uScroll: { value: this.normalizedScrollY },
+                },
+                defines: {
+                    uTotalModels: parseFloat(this.sectionCount).toFixed(2),
+                    uRange: this.range,
+                },
+                vertexShader: horseParticlesVertex,
+                fragmentShader: horseParticlesFragment,
+                transparent: true,
+                depthWrite: false,
+            });
 
-        this.horseMesh.scale.set(0.01, 0.01, 0.01)
+            const horseBaseMesh = findMesh(this.horseMesh);
+            if (horseBaseMesh && horseBaseMesh.geometry) {
+                this.fg = horseBaseMesh.geometry;
+                const fgCount = this.fg.attributes.position.count;
+                const e2Pos = this.e2Geometry.attributes.position;
+                const e2Count = e2Pos ? e2Pos.count : 0;
 
-        const pointsMaterial = new THREE.PointsMaterial( {
-            size: 4,
-            sizeAttenuation: false,
-        } );
+                this.aE2Geometry = new Float32Array(fgCount * 3);
+                for (let i = 0; i < fgCount; i++) {
+                    const srcIdx = e2Count > 0 ? (i % e2Count) : 0;
+                    if (e2Pos) {
+                        this.aE2Geometry[i * 3 + 0] = e2Pos.array[srcIdx * 3 + 0];
+                        this.aE2Geometry[i * 3 + 1] = e2Pos.array[srcIdx * 3 + 1];
+                        this.aE2Geometry[i * 3 + 2] = e2Pos.array[srcIdx * 3 + 2];
+                    }
+                }
+                this.fg.setAttribute('aE2Geometry', new THREE.BufferAttribute(this.aE2Geometry, 3));
 
-        this.horsePointsMaterial = new THREE.ShaderMaterial( {
-            uniforms: {
-                uPositions: { value: null },
-                uSize: { value: 2 },
-                uTime: { value: 0 },
-                uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
-                uScroll : { value: this.normalizedScrollY },
-            },
-            defines:
-            {
-                uTotalModels : parseFloat(this.sectionCount).toFixed(2),
-                uRange : this.range,
-            },
-            vertexShader: horseParticlesVertex,
-            fragmentShader: horseParticlesFragment,
-            transparent: true,
-            depthWrite: false,
-            //type: 'PointsMaterial',
-            //blending: THREE.AdditiveBlending
-        } );
+                const points = new THREE.Points(this.fg, this.horsePointsMaterial);
+                if (horseBaseMesh.morphTargetInfluences) {
+                    points.morphTargetInfluences = horseBaseMesh.morphTargetInfluences;
+                    points.morphTargetDictionary = horseBaseMesh.morphTargetDictionary;
+                }
+            }
 
-
-        this.fg = this.horseMesh.children[0].geometry
-
-        this.aE2Geometry = new Float32Array( this.fg.attributes.position.array.length );
-
-        for ( let i = 0; i < this.fg.attributes.position.array.length; i ++ ) {
-            this.aE2Geometry[i + 0] = this.e2Geometry.attributes.position.array[i + 0];
-            this.aE2Geometry[i + 1] = this.e2Geometry.attributes.position.array[i + 1];
-            this.aE2Geometry[i + 2] = this.e2Geometry.attributes.position.array[i + 2];
+            this.setAnimation();
         }
 
-        this.fg.setAttribute( 'aE2Geometry', new THREE.BufferAttribute( this.aE2Geometry, `3` ) );
-
-
-        const points = new THREE.Points( this.fg, this.horsePointsMaterial );
-        points.morphTargetInfluences = this.horseMesh.children[0].morphTargetInfluences;
-        points.morphTargetDictionary = this.horseMesh.children[0].morphTargetDictionary;
-
-        //points.scale.set(1, 1, 1)
-        //points.rotateY(Math.PI / 2)
-
-     
-
-        this.setAnimation()
-
-        // this.scene.add(this.horseMesh)
-        // this.scene.add(points)
-
-        this.treeMesh = this.resources.items.treeModel.scene
-        this.treeMesh.children[1].material.visible = false
-        this.treeMesh.scale.set(1.1, 1.1, 1.1)
-        this.treeMesh.position.set(0, this.objectDistance, 0)
-
-        // this.scene.add(this.treeMesh)
-
+        // Tree Mesh Setup
+        if (this.resources.items.treeModel?.scene) {
+            this.treeMesh = this.resources.items.treeModel.scene;
+            this.treeMesh.traverse((child) => {
+                if (child.isMesh && child.material) child.material.visible = false;
+            });
+            const treeScale = 1.1 * mobileScale;
+            this.treeMesh.scale.set(treeScale, treeScale, treeScale);
+            this.treeMesh.position.set(0, this.objectDistance, 0);
+        }
     }
 
     resize() {
-        this.fbo.resize(this.sizes.width, this.sizes.height);
-        this.renderMaterial.uniforms.uPixelRatio.value = Math.min(window.devicePixelRatio, 2)
-        this.horsePointsMaterial.uniforms.uPixelRatio.value = Math.min(window.devicePixelRatio, 2)
+        this.isMobile = window.innerWidth < 768;
+
+        if (this.fbo) this.fbo.resize(this.sizes.width, this.sizes.height);
+        const pixelRatio = Math.min(window.devicePixelRatio, 2);
+
+        if (this.renderMaterial) {
+            this.renderMaterial.uniforms.uPixelRatio.value = pixelRatio;
+            this.renderMaterial.uniforms.uSize.value = this.isMobile ? 7.0 : 12.0;
+        }
+
+        if (this.horsePointsMaterial) {
+            this.horsePointsMaterial.uniforms.uPixelRatio.value = pixelRatio;
+            this.horsePointsMaterial.uniforms.uSize.value = this.isMobile ? 1.5 : 2.0;
+        }
     }
 
-    scroll()
-    {
-        this.scrollY = document.getElementById('fake-scroll').scrollTop
+    scroll() {
+        const fakeScroll = document.getElementById('fake-scroll');
+        const currentY = fakeScroll ? fakeScroll.scrollTop : (window.scrollY || window.pageYOffset || 0);
+        this.scrollY = currentY;
 
-        //next center section
-        if( !this.isMobile ){
-            this.centerPrevSection = (Math.floor(this.scrollY / window.innerHeight)) * window.innerHeight
-            this.centerNextSection = (Math.floor(this.scrollY / window.innerHeight) + 1) * window.innerHeight
+        // Skip desktop section snap logic on mobile to preserve natural touch momentum
+        if (!this.isMobile) {
+            const h = window.innerHeight;
+            this.centerPrevSection = Math.floor(this.scrollY / h) * h;
+            this.centerNextSection = (Math.floor(this.scrollY / h) + 1) * h;
 
-            if ( this.scrollY + 100 > this.centerNextSection ) {
-                this.scrollY = this.centerNextSection
+            if (this.scrollY + 100 > this.centerNextSection) {
+                this.scrollY = this.centerNextSection;
             }
-
-            if ( this.scrollY - 100 < this.centerPrevSection ) {
-                this.scrollY = this.centerPrevSection
+            if (this.scrollY - 100 < this.centerPrevSection) {
+                this.scrollY = this.centerPrevSection;
             }
         }
 
-        this.normalizedScrollY = this.scrollY / (this.sectionCount * window.innerHeight);
-        this.normalizedScrollY = Math.min(this.normalizedScrollY, 1.0)
+        const totalScrollable = Math.max(this.sectionCount * window.innerHeight, 1);
+        this.normalizedScrollY = Math.min(Math.max(this.scrollY / totalScrollable, 0.0), 1.0);
     }
 
-    scrollSet()
-    {
-        const lambda = this.isMobile ? 9 : 3
-        this.normalizedTargetScrollY = MathUtils.damp(this.normalizedTargetScrollY, this.normalizedScrollY, lambda, this.time.delta);
-        this.objectDistance = this.normalizedTargetScrollY / this.range
+    scrollSet() {
+        // Snappier damp response for touch screens
+        const lambda = this.isMobile ? 10 : 3;
+        const dt = this.time.delta > 1.0 ? this.time.delta * 0.001 : this.time.delta;
 
-        this.simMaterial.uniforms.uScroll.value = this.normalizedTargetScrollY
-        this.horsePointsMaterial.uniforms.uScroll.value = this.normalizedTargetScrollY
-        this.renderMaterial.uniforms.uScroll.value = this.normalizedTargetScrollY
+        this.normalizedTargetScrollY = MathUtils.damp(this.normalizedTargetScrollY, this.normalizedScrollY, lambda, dt);
+        this.objectDistance = this.normalizedTargetScrollY / this.range;
 
-        this.scrollTarget = MathUtils.damp(this.scrollTarget, this.scrollY, lambda, this.time.delta);
+        if (this.simMaterial) this.simMaterial.uniforms.uScroll.value = this.normalizedTargetScrollY;
+        if (this.horsePointsMaterial) this.horsePointsMaterial.uniforms.uScroll.value = this.normalizedTargetScrollY;
+        if (this.renderMaterial) this.renderMaterial.uniforms.uScroll.value = this.normalizedTargetScrollY;
 
-        const newSection = Math.round(this.scrollTarget / this.sizes.height)
+        this.scrollTarget = MathUtils.damp(this.scrollTarget, this.scrollY, lambda, dt);
 
-        if(newSection !== this.currentSection)
-        {
-            this.currentSection = newSection
+        const newSection = Math.round(this.scrollTarget / this.sizes.height);
+        if (newSection !== this.currentSection) {
+            this.currentSection = newSection;
         }
 
-
-        this.smoothScroll.style.webkitTransform = 'translate3d(0px, -' + this.scrollTarget + 'px, 0px)';
-        this.smoothScroll.style.mozTransform = 'translate3d(0px, -' + this.scrollTarget + 'px, 0px)';
-        this.smoothScroll.style.transform = 'translate3d(0px, -' + this.scrollTarget + 'px, 0px)';
+        if (this.smoothScroll) {
+            this.smoothScroll.style.transform = `translate3d(0px, -${this.scrollTarget}px, 0px)`;
+        }
     }
 
     setAnimation() {
-        this.animation = {}
+        if (!this.resource?.animations?.length) return;
 
-        // Mixer
-        this.animation.mixer = new THREE.AnimationMixer(this.horseMesh)
+        this.animation = {};
+        this.animation.mixer = new THREE.AnimationMixer(this.horseMesh);
+        this.animation.actions = {};
 
-        // Actions
-        this.animation.actions = {}
+        this.animation.actions.idle = this.animation.mixer.clipAction(this.resource.animations[0]);
+        this.animation.actions.open = this.animation.mixer.clipAction(this.resource.animations[0]);
 
-        this.animation.actions.idle = this.animation.mixer.clipAction(this.resource.animations[0])
-        this.animation.actions.open = this.animation.mixer.clipAction(this.resource.animations[0])
+        this.animation.actions.current = this.animation.actions.idle;
+        this.animation.actions.current.play();
 
-        this.animation.actions.current = this.animation.actions.idle
-        this.animation.actions.current.play()
+        this.animation.play = (name) => {
+            const newAction = this.animation.actions[name];
+            const oldAction = this.animation.actions.current;
+            if (!newAction || newAction === oldAction) return;
 
-        // Play the action
-        this.animation.play = (name) =>
-        {
-            const newAction = this.animation.actions[name]
-            const oldAction = this.animation.actions.current
-
-            newAction.reset()
-            newAction.play()
-            newAction.crossFadeFrom(oldAction, 1)
-
-            this.animation.actions.current = newAction
-        }
-    }
-
-    setDebug() {
-        // Debug
-        if(this.debug.active)
-        {
-            //this.debugFolder = this.debug.gui.addFolder('Cube')
-            //this.debugFolder.open()
-        }
+            newAction.reset();
+            newAction.play();
+            newAction.crossFadeFrom(oldAction, 1);
+            this.animation.actions.current = newAction;
+        };
     }
 
     update() {
-        if ( this.animation )
-            this.animation.mixer.update(this.time.delta)
+        const dt = this.time.delta > 1.0 ? this.time.delta * 0.001 : this.time.delta;
 
-        this.simMaterial.uniforms.uTime.value = this.time.elapsed
-        this.renderMaterial.uniforms.uTime.value = this.time.elapsed
-        this.horsePointsMaterial.uniforms.uTime.value = this.time.elapsed
+        if (this.animation?.mixer) {
+            this.animation.mixer.update(dt);
+        }
 
-        // this.fbo.particles.rotateY(this.time.delta * 0.1)
+        if (this.simMaterial) this.simMaterial.uniforms.uTime.value = this.time.elapsed;
+        if (this.renderMaterial) this.renderMaterial.uniforms.uTime.value = this.time.elapsed;
+        if (this.horsePointsMaterial) this.horsePointsMaterial.uniforms.uTime.value = this.time.elapsed;
 
-        this.scrollSet()
+        this.scrollSet();
 
-        this.fbo.update();
+        if (this.fbo) {
+            this.fbo.update();
+        }
 
-        const speed = 2;
-        const section = this.sectionCount * 2;
-        const displacement = -1;
-        this.treeMesh.position.y = (displacement - section * 4) + this.objectDistance * this.sectionCount * speed + Math.sin(this.time.elapsed * 0.5) * 0.15
-        this.simMaterial.uniforms.uTreePos.value = this.treeMesh.position
-        
-        // levitation only, no rotation
-        this.camera.position.x += (this.cursor.x * 0.5 - this.camera.position.x) * 5 * this.time.delta
-        this.camera.position.y += (- this.cursor.y * 0.5 - this.camera.position.y) * 5 * this.time.delta
+        if (this.treeMesh) {
+            const speed = 2;
+            const section = this.sectionCount * 2;
+            const displacement = -1;
+            this.treeMesh.position.y = (displacement - section * 4) + this.objectDistance * this.sectionCount * speed + Math.sin(this.time.elapsed * 0.5) * 0.15;
+            if (this.simMaterial) {
+                this.simMaterial.uniforms.uTreePos.value.copy(this.treeMesh.position);
+            }
+        }
+
+        // Dampen cursor/gyro sway on mobile so the particles don't drift away from center
+        if (this.cursor && this.camera) {
+            const cursorInfluence = this.isMobile ? 0.15 : 0.5;
+            this.camera.position.x += (this.cursor.x * cursorInfluence - this.camera.position.x) * 5 * dt;
+            this.camera.position.y += (-this.cursor.y * cursorInfluence - this.camera.position.y) * 5 * dt;
+        }
     }
 }

@@ -30,7 +30,7 @@ export default [
     {
         name: 'musicModel',
         type: 'gltfModel',
-        path: 'models/maanya.glb'
+        path: 'models/model.glb'
     },
     {
         name: 'gModel',
