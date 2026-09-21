@@ -33,8 +33,7 @@ export default class Page {
         this.cursor = this.experience.cursor || { x: 0, y: 0 }
 
         // Mobile float fallback: HalfFloatType is widely supported across mobile GPUs
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-        this.floatType = isIOS ? THREE.HalfFloatType : THREE.FloatType;
+        this.floatType = THREE.FloatType;
 
         const sections = document.querySelectorAll('.section');
         this.sectionCount = Math.max(sections.length - 1, 1);
