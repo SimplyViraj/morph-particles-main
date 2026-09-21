@@ -1,5 +1,4 @@
-
-import { useRef, useMemo, useEffect } from "react";
+import { useRef, useMemo, useEffect, useState } from "react";
 import Globe from "react-globe.gl";
 import { MeshPhongMaterial } from "three";
 import {
@@ -13,6 +12,13 @@ const About = () => {
   const globeRef = useRef(null);
   const containerRef = useRef(null);
   const hasFired = useRef(false);
+
+  // Long-press Pop State
+  const [activeCard, setActiveCard] = useState(null);
+  const [activeTransform, setActiveTransform] = useState({ x: 0, y: 0, scale: 1 });
+  const timerRef = useRef(null);
+  const cardRefs = useRef({});
+  const isLongPressActive = useRef(false);
 
   const globeMaterial = useMemo(
     () =>
@@ -63,6 +69,77 @@ const About = () => {
     };
   }, []);
 
+  // Long-press handling for mobile
+  const handleTouchStart = (cardId) => {
+    if (activeCard) return;
+
+    timerRef.current = setTimeout(() => {
+      isLongPressActive.current = true;
+
+      // Haptic feedback
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate(20);
+      }
+
+      const el = cardRefs.current[cardId];
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const cardCenterX = rect.left + rect.width / 2;
+        const cardCenterY = rect.top + rect.height / 2;
+        const screenCenterX = window.innerWidth / 2;
+        const screenCenterY = window.innerHeight / 2;
+
+        const deltaX = screenCenterX - cardCenterX;
+        const deltaY = screenCenterY - cardCenterY;
+        const targetScale = Math.min(1.45, (window.innerWidth * 0.85) / rect.width);
+
+        setActiveTransform({ x: deltaX, y: deltaY, scale: targetScale });
+      }
+
+      setActiveCard(cardId);
+    }, 450);
+  };
+
+  const cancelTouch = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+    setTimeout(() => {
+      isLongPressActive.current = false;
+    }, 100);
+  };
+
+  const dismissPreview = () => {
+    cancelTouch();
+    setActiveCard(null);
+    setActiveTransform({ x: 0, y: 0, scale: 1 });
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const getCardStyle = (id) => {
+    const isActive = activeCard === id;
+    if (isActive) {
+      return {
+        transform: `translate3d(${activeTransform.x}px, ${activeTransform.y}px, 0) scale(${activeTransform.scale})`,
+        transition: "transform 0.45s cubic-bezier(0.32, 1.25, 0.32, 1), box-shadow 0.35s ease",
+        zIndex: 50,
+        WebkitTouchCallout: "none",
+        userSelect: "none",
+      };
+    }
+    return {
+      transform: "translate3d(0, 0, 0) scale(1)",
+      transition: "transform 0.35s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.35s ease",
+      WebkitTouchCallout: "none",
+      userSelect: "none",
+    };
+  };
+
   return (
     <section
       id="about"
@@ -79,6 +156,16 @@ const About = () => {
         text-[#ffeded]
       "
     >
+      {/* iOS Peek/Pop Backdrop Overlay (Mobile only) */}
+      <div
+        onClick={dismissPreview}
+        className={`
+          fixed inset-0 z-40 bg-black/70 backdrop-blur-md
+          transition-opacity duration-300 lg:hidden
+          ${activeCard ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}
+        `}
+      />
+
       {/* =====================================================
           MAIN CONTENT
       ====================================================== */}
@@ -118,14 +205,22 @@ const About = () => {
         >
           {/* ABOUT CARD */}
           <div
-            className="
-              flex
+            ref={(el) => (cardRefs.current["about"] = el)}
+            onTouchStart={() => handleTouchStart("about")}
+            onTouchEnd={cancelTouch}
+            onTouchMove={cancelTouch}
+            onContextMenu={(e) => e.preventDefault()}
+            style={getCardStyle("about")}
+            className={`
+              relative flex
               min-h-[170px]
               flex-col
               justify-between
               rounded-xl
               bg-[#b8a990]
               p-3
+              touch-manipulation
+              select-none [-webkit-touch-callout:none]
 
               sm:min-h-[210px]
               sm:rounded-2xl
@@ -133,10 +228,16 @@ const About = () => {
 
               lg:min-h-[280px]
               lg:p-8
-            "
+              ${
+                activeCard === "about"
+                  ? "shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] ring-1 ring-[#3a3530]/40"
+                  : ""
+              }
+            `}
           >
             <span
               className="
+                pointer-events-none
                 text-[8px]
                 tracking-[0.2em]
                 uppercase
@@ -154,6 +255,7 @@ const About = () => {
 
             <h2
               className="
+                pointer-events-none
                 mt-auto
                 text-[clamp(1rem,4vw,1.4rem)]
                 font-bold
@@ -174,8 +276,14 @@ const About = () => {
 
           {/* BIO CARD */}
           <div
-            className="
-              flex
+            ref={(el) => (cardRefs.current["bio"] = el)}
+            onTouchStart={() => handleTouchStart("bio")}
+            onTouchEnd={cancelTouch}
+            onTouchMove={cancelTouch}
+            onContextMenu={(e) => e.preventDefault()}
+            style={getCardStyle("bio")}
+            className={`
+              relative flex
               min-h-[170px]
               flex-col
               justify-center
@@ -183,6 +291,8 @@ const About = () => {
               rounded-xl
               bg-[#1e1915]
               p-3
+              touch-manipulation
+              select-none [-webkit-touch-callout:none]
 
               sm:min-h-[210px]
               sm:gap-3
@@ -192,10 +302,16 @@ const About = () => {
               lg:min-h-[280px]
               lg:gap-5
               lg:p-8
-            "
+              ${
+                activeCard === "bio"
+                  ? "shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] ring-1 ring-[#c9b896]/40"
+                  : ""
+              }
+            `}
           >
             <p
               className="
+                pointer-events-none
                 text-[8px]
                 leading-[1.5]
                 normal-case
@@ -215,6 +331,7 @@ const About = () => {
 
             <p
               className="
+                pointer-events-none
                 text-[8px]
                 leading-[1.5]
                 normal-case
@@ -252,26 +369,36 @@ const About = () => {
           <div className="grid grid-cols-2 grid-rows-2 gap-2 sm:gap-3">
             {[
               {
+                id: "skill-se",
                 icon: Code,
                 label: "Software Engineering",
               },
               {
+                id: "skill-ai",
                 icon: Database,
                 label: "AI & Data",
               },
               {
+                id: "skill-fs",
                 icon: GlobeIcon,
                 label: "Full Stack",
               },
               {
+                id: "skill-ps",
                 icon: Lightbulb,
                 label: "Problem Solving",
               },
-            ].map(({ icon: Icon, label }) => (
+            ].map(({ id, icon: Icon, label }) => (
               <div
                 key={label}
-                className="
-                  flex
+                ref={(el) => (cardRefs.current[id] = el)}
+                onTouchStart={() => handleTouchStart(id)}
+                onTouchEnd={cancelTouch}
+                onTouchMove={cancelTouch}
+                onContextMenu={(e) => e.preventDefault()}
+                style={getCardStyle(id)}
+                className={`
+                  relative flex
                   min-h-[85px]
                   flex-col
                   items-center
@@ -282,6 +409,8 @@ const About = () => {
                   bg-[#1e1915]
                   p-2
                   text-center
+                  touch-manipulation
+                  select-none [-webkit-touch-callout:none]
                   transition-colors
                   hover:border-[#c9b896]/30
 
@@ -291,10 +420,16 @@ const About = () => {
 
                   lg:min-h-[200px]
                   lg:p-4
-                "
+                  ${
+                    activeCard === id
+                      ? "shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] ring-1 ring-[#c9b896]/40"
+                      : ""
+                  }
+                `}
               >
                 <Icon
                   className="
+                    pointer-events-none
                     mb-1
                     h-4 w-4
                     text-[#c9b896]
@@ -308,6 +443,7 @@ const About = () => {
 
                 <span
                   className="
+                    pointer-events-none
                     text-[6px]
                     leading-[1.2]
                     normal-case
@@ -328,15 +464,25 @@ const About = () => {
               LOCATION / GLOBE
           ==================================================== */}
           <div
-            ref={containerRef}
-            className="
-              flex
+            ref={(el) => {
+              containerRef.current = el;
+              cardRefs.current["location"] = el;
+            }}
+            onTouchStart={() => handleTouchStart("location")}
+            onTouchEnd={cancelTouch}
+            onTouchMove={cancelTouch}
+            onContextMenu={(e) => e.preventDefault()}
+            style={getCardStyle("location")}
+            className={`
+              relative flex
               min-h-[180px]
               flex-col
               justify-between
               rounded-xl
               bg-[#1e1915]
               p-2
+              touch-manipulation
+              select-none [-webkit-touch-callout:none]
 
               sm:min-h-[210px]
               sm:rounded-2xl
@@ -344,11 +490,17 @@ const About = () => {
 
               lg:min-h-[200px]
               lg:p-5
-            "
+              ${
+                activeCard === "location"
+                  ? "shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] ring-1 ring-[#c9b896]/40"
+                  : ""
+              }
+            `}
           >
             <div>
               <span
                 className="
+                  pointer-events-none
                   text-[7px]
                   tracking-[0.15em]
                   uppercase
@@ -365,6 +517,7 @@ const About = () => {
 
               <div
                 className="
+                  pointer-events-none
                   mt-1
                   flex
                   h-[70px]
@@ -407,7 +560,7 @@ const About = () => {
               </div>
             </div>
 
-            <div className="mt-2">
+            <div className="mt-2 pointer-events-none">
               <p
                 className="
                   text-[8px]
@@ -445,7 +598,13 @@ const About = () => {
               SCROLL CARD
           ==================================================== */}
           <div
-            className="
+            ref={(el) => (cardRefs.current["scroll"] = el)}
+            onTouchStart={() => handleTouchStart("scroll")}
+            onTouchEnd={cancelTouch}
+            onTouchMove={cancelTouch}
+            onContextMenu={(e) => e.preventDefault()}
+            style={getCardStyle("scroll")}
+            className={`
               relative
               flex
               min-h-[180px]
@@ -454,6 +613,8 @@ const About = () => {
               rounded-xl
               bg-[#b8a990]
               p-2
+              touch-manipulation
+              select-none [-webkit-touch-callout:none]
 
               sm:min-h-[210px]
               sm:rounded-2xl
@@ -461,10 +622,15 @@ const About = () => {
 
               lg:min-h-[200px]
               lg:p-5
-            "
+              ${
+                activeCard === "scroll"
+                  ? "shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] ring-1 ring-[#3a3530]/40"
+                  : ""
+              }
+            `}
           >
             {/* Arrow */}
-            <div className="self-start">
+            <div className="self-start pointer-events-none">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="
@@ -496,6 +662,7 @@ const About = () => {
                 items-center
                 gap-1
                 self-end
+                pointer-events-none
 
                 sm:gap-2
               "
@@ -519,10 +686,7 @@ const About = () => {
           </div>
         </div>
       </div>
-      {/* =====================================================
-          RIGHT SIDE — 3D MODEL AREA
-          Only visible on desktop
-      ====================================================== */}
+
       <div className="hidden lg:block lg:w-[40%]" />
     </section>
   );
