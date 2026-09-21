@@ -1,8 +1,20 @@
+import { useState, useRef, useEffect } from "react";
 
 export default function Hero() {
-  const scrollTo = (id) => (e) => {
-    e.preventDefault();
+  const [activeCard, setActiveCard] = useState(null);
+  const [activeTransform, setActiveTransform] = useState({ x: 0, y: 0, scale: 1 });
+  const timerRef = useRef(null);
+  const cardRefs = useRef({});
+  const isLongPressActive = useRef(false);
 
+  const scrollTo = (id) => (e) => {
+    // If a long-press just occurred, suppress the default link jump
+    if (isLongPressActive.current) {
+      e.preventDefault();
+      return;
+    }
+
+    e.preventDefault();
     const scroller = document.getElementById("fake-scroll");
     const target = document.getElementById(id);
 
@@ -12,6 +24,77 @@ export default function Hero() {
         behavior: "smooth",
       });
     }
+  };
+
+  const handleTouchStart = (cardId) => {
+    if (activeCard) return;
+
+    timerRef.current = setTimeout(() => {
+      isLongPressActive.current = true;
+
+      // Subtle iPhone haptic pulse
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate(20);
+      }
+
+      const el = cardRefs.current[cardId];
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const cardCenterX = rect.left + rect.width / 2;
+        const cardCenterY = rect.top + rect.height / 2;
+        const screenCenterX = window.innerWidth / 2;
+        const screenCenterY = window.innerHeight / 2;
+
+        const deltaX = screenCenterX - cardCenterX;
+        const deltaY = screenCenterY - cardCenterY;
+        const targetScale = Math.min(1.4, (window.innerWidth * 0.82) / rect.width);
+
+        setActiveTransform({ x: deltaX, y: deltaY, scale: targetScale });
+      }
+
+      setActiveCard(cardId);
+    }, 450);
+  };
+
+  const cancelTouch = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+    // Small delay to prevent anchor tags from firing right on release
+    setTimeout(() => {
+      isLongPressActive.current = false;
+    }, 100);
+  };
+
+  const dismissPreview = () => {
+    cancelTouch();
+    setActiveCard(null);
+    setActiveTransform({ x: 0, y: 0, scale: 1 });
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const getCardStyle = (id) => {
+    const isActive = activeCard === id;
+    if (isActive) {
+      return {
+        transform: `translate3d(${activeTransform.x}px, ${activeTransform.y}px, 0) scale(${activeTransform.scale})`,
+        transition: "transform 0.45s cubic-bezier(0.32, 1.25, 0.32, 1), box-shadow 0.35s ease",
+        zIndex: 50,
+        WebkitTouchCallout: "none",
+        userSelect: "none",
+      };
+    }
+    return {
+      transform: "translate3d(0, 0, 0) scale(1)",
+      transition: "transform 0.35s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.35s ease",
+      WebkitTouchCallout: "none",
+      userSelect: "none",
+    };
   };
 
   return (
@@ -26,6 +109,16 @@ export default function Hero() {
         lg:flex-row
       "
     >
+      {/* iOS Peek/Pop Backdrop Overlay (Mobile only) */}
+      <div
+        onClick={dismissPreview}
+        className={`
+          fixed inset-0 z-40 bg-black/70 backdrop-blur-md
+          transition-opacity duration-300 lg:hidden
+          ${activeCard ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}
+        `}
+      />
+
       {/* Name Header */}
       <div
         className="
@@ -87,7 +180,7 @@ export default function Hero() {
           justify-center
           px-3
           pt-[60dvh]
-    lg:pt-0
+          lg:pt-0
           animate-fadeIn
           sm:px-5
           lg:w-1/2
@@ -108,20 +201,33 @@ export default function Hero() {
             sm:gap-3
           "
         >
-          {/* Headline */}
+          {/* Card 1: Headline */}
           <div
-            className="
-              flex flex-col justify-between
+            ref={(el) => (cardRefs.current["headline"] = el)}
+            onTouchStart={() => handleTouchStart("headline")}
+            onTouchEnd={cancelTouch}
+            onTouchMove={cancelTouch}
+            onContextMenu={(e) => e.preventDefault()}
+            style={getCardStyle("headline")}
+            className={`
+              relative flex flex-col justify-between
               rounded-xl
               bg-[#1e1915]
               p-3
+              touch-manipulation
+              select-none [-webkit-touch-callout:none]
               sm:rounded-2xl
               sm:p-4
               md:p-5
               lg:p-6
-            "
+              ${
+                activeCard === "headline"
+                  ? "shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] ring-1 ring-[#c9b896]/40"
+                  : ""
+              }
+            `}
           >
-            <div className="flex justify-end">
+            <div className="flex justify-end pointer-events-none">
               <svg
                 className="
                   h-6 w-6
@@ -140,6 +246,7 @@ export default function Hero() {
 
             <h1
               className="
+                pointer-events-none
                 text-[clamp(0.85rem,3.5vw,1.5rem)]
                 font-light
                 leading-[1.2]
@@ -157,8 +264,25 @@ export default function Hero() {
             </h1>
           </div>
 
-          {/* Portrait */}
-          <div className="overflow-hidden rounded-xl sm:rounded-2xl">
+          {/* Card 2: Portrait */}
+          <div
+            ref={(el) => (cardRefs.current["portrait"] = el)}
+            onTouchStart={() => handleTouchStart("portrait")}
+            onTouchEnd={cancelTouch}
+            onTouchMove={cancelTouch}
+            onContextMenu={(e) => e.preventDefault()}
+            style={getCardStyle("portrait")}
+            className={`
+              relative overflow-hidden rounded-xl sm:rounded-2xl
+              touch-manipulation
+              select-none [-webkit-touch-callout:none]
+              ${
+                activeCard === "portrait"
+                  ? "shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] ring-1 ring-[#c9b896]/40"
+                  : ""
+              }
+            `}
+          >
             <img
               src="/images/Viraj.jpeg"
               alt="Viraj Tammana"
@@ -167,26 +291,41 @@ export default function Hero() {
                 w-full
                 scale-[1.35]
                 object-cover
+                pointer-events-none
                 sm:scale-150
               "
             />
           </div>
 
-          {/* Bio */}
+          {/* Card 3: Bio */}
           <div
-            className="
-              flex flex-col justify-between
+            ref={(el) => (cardRefs.current["bio"] = el)}
+            onTouchStart={() => handleTouchStart("bio")}
+            onTouchEnd={cancelTouch}
+            onTouchMove={cancelTouch}
+            onContextMenu={(e) => e.preventDefault()}
+            style={getCardStyle("bio")}
+            className={`
+              relative flex flex-col justify-between
               rounded-xl
               bg-[#1e1915]
               p-3
+              touch-manipulation
+              select-none [-webkit-touch-callout:none]
               sm:rounded-2xl
               sm:p-4
               md:p-5
               lg:p-5
-            "
+              ${
+                activeCard === "bio"
+                  ? "shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] ring-1 ring-[#c9b896]/40"
+                  : ""
+              }
+            `}
           >
             <span
               className="
+                pointer-events-none
                 text-base
                 text-[#c9b896]
                 sm:text-lg
@@ -199,6 +338,7 @@ export default function Hero() {
 
             <p
               className="
+                pointer-events-none
                 mt-auto
                 text-[9px]
                 leading-[1.5]
@@ -216,21 +356,35 @@ export default function Hero() {
             </p>
           </div>
 
-          {/* Contact */}
+          {/* Card 4: Contact */}
           <div
-            className="
-              flex flex-col justify-between
+            ref={(el) => (cardRefs.current["contact"] = el)}
+            onTouchStart={() => handleTouchStart("contact")}
+            onTouchEnd={cancelTouch}
+            onTouchMove={cancelTouch}
+            onContextMenu={(e) => e.preventDefault()}
+            style={getCardStyle("contact")}
+            className={`
+              relative flex flex-col justify-between
               rounded-xl
               bg-[#b8a990]
               p-3
+              touch-manipulation
+              select-none [-webkit-touch-callout:none]
               sm:rounded-2xl
               sm:p-4
               md:p-5
-            "
+              ${
+                activeCard === "contact"
+                  ? "shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] ring-1 ring-[#3a3530]/40"
+                  : ""
+              }
+            `}
           >
             <div className="flex items-start justify-between">
               <span
                 className="
+                  pointer-events-none
                   text-[8px]
                   italic
                   leading-[1.3]
@@ -254,6 +408,7 @@ export default function Hero() {
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="
+                    pointer-events-none
                     h-3 w-3
                     sm:h-3.5 sm:w-3.5
                     md:h-4 md:w-4
@@ -297,4 +452,3 @@ export default function Hero() {
     </section>
   );
 }
-
